@@ -46,20 +46,28 @@ VERDE_ESC = "#1b5e20"
 VERMELHO = "#c62828"
 AMARELO = "#f9a825"
 
-st.set_page_config(page_title="Abrigo · Controle Financeiro",
+NOME_ABRIGO = "Abrigo São Francisco de Assis"
+
+st.set_page_config(page_title=f"{NOME_ABRIGO} · Financeiro",
                    page_icon="🐾", layout="wide")
 
 # CSS leve para deixar os cartões mais bonitos
 st.markdown(
     """
     <style>
-      .block-container {padding-top: 2rem;}
-      div[data-testid="stMetric"] {
-          background: #f1f8f2; border: 1px solid #d7e8d9;
-          border-radius: 14px; padding: 16px 18px;
+      .block-container {padding-top: 1.1rem; padding-bottom: .6rem; max-width: 1400px;}
+      h1 {font-size: 1.6rem !important; margin-bottom: .15rem; color:#1b5e20;}
+      h2 {font-size: 1.15rem !important; margin: .15rem 0; color:#1b5e20;}
+      h3 {font-size: 1.0rem !important; margin: .15rem 0; color:#1b5e20;}
+      hr {margin: .45rem 0;}
+      [data-testid="stMetric"] {
+          background:#f1f8f2; border:1px solid #d7e8d9;
+          border-radius:10px; padding:6px 12px;
       }
-      div[data-testid="stMetricLabel"] {color:#3a5a3c; font-weight:600;}
-      h1, h2, h3 {color:#1b5e20;}
+      [data-testid="stMetricLabel"] p {font-size:.78rem !important; color:#3a5a3c; font-weight:600;}
+      [data-testid="stMetricValue"], [data-testid="stMetricValue"] > div {font-size:1.35rem !important;}
+      [data-testid="stVerticalBlock"] {gap: .55rem;}
+      [data-testid="stCaptionContainer"] p {font-size:.72rem !important;}
     </style>
     """,
     unsafe_allow_html=True,
@@ -330,7 +338,7 @@ def conectado() -> bool:
 # UI
 # ----------------------------------------------------------------------
 def pagina_dashboard(d: pd.DataFrame):
-    st.title("🐾 Painel Financeiro — Abrigo de Animais")
+    st.title("🐾 " + NOME_ABRIGO)
     if d.empty:
         st.info("Ainda não há lançamentos. Vá em **Novo Registro** para começar.")
         return
@@ -354,7 +362,7 @@ def pagina_dashboard(d: pd.DataFrame):
     with cols[0]:
         st.subheader("Saldo acumulado")
         hist = serie_mensal(d)
-        st.line_chart(hist.set_index("mes")[["acumulado"]], height=280, color=VERDE)
+        st.line_chart(hist.set_index("mes")[["acumulado"]], height=200, color=VERDE)
     with cols[1]:
         st.subheader("🔔 Doadores para abordar")
         dd = doadores(d)
@@ -437,28 +445,31 @@ def pagina_projecao(d: pd.DataFrame):
     if hist.empty:
         st.info("Sem dados ainda.")
         return
-    st.subheader("Histórico por mês")
-    show = hist.copy()
-    for c in ("entradas", "saidas", "saldo", "acumulado"):
-        show[c] = show[c].map(brl)
-    st.dataframe(show, use_container_width=True, hide_index=True)
-    st.bar_chart(hist.set_index("mes")[["entradas", "saidas"]], height=300,
+    proj = projecao(d)
+
+    st.subheader("Entradas e saídas por mês")
+    st.bar_chart(hist.set_index("mes")[["entradas", "saidas"]], height=240,
                  color=[VERDE, VERMELHO])
 
-    st.subheader("Previsão — próximos 3 meses")
-    proj = projecao(d)
-    if proj.empty:
-        st.caption("Dados insuficientes para projetar.")
-        return
-    showp = proj.rename(columns={
-        "mes": "Mês", "entradas_esp": "Entradas (esp.)", "saidas_esp": "Saídas (esp.)",
-        "saldo_esp": "Saldo esperado", "saldo_pess": "Saldo pessimista",
-        "saldo_otim": "Saldo otimista", "acum_esp": "Saldo acum. esperado"})
-    for c in showp.columns[1:]:
-        showp[c] = showp[c].map(brl)
-    st.dataframe(showp, use_container_width=True, hide_index=True)
-    st.caption("Cenários: **pessimista** = menos entrada / mais saída · "
-               "**otimista** = mais entrada / menos saída (faixa de ±1 desvio-padrão).")
+    st.subheader("Saldo acumulado — realizado e projetado")
+    acc = hist[["mes", "acumulado"]].rename(columns={"acumulado": "Realizado"}).set_index("mes")
+    if not proj.empty:
+        fut = proj[["mes", "acum_esp"]].rename(columns={"acum_esp": "Projetado"}).set_index("mes")
+        comb = pd.concat([acc, fut], axis=1).sort_index()
+        comb.loc[acc.index[-1], "Projetado"] = comb.loc[acc.index[-1], "Realizado"]
+        st.line_chart(comb, height=240, color=[VERDE_ESC, AMARELO])
+    else:
+        st.line_chart(acc, height=240, color=VERDE_ESC)
+
+    if not proj.empty:
+        st.subheader("Previsão do próximo mês")
+        p0 = proj.iloc[0]
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Saldo esperado", brl(p0.saldo_esp))
+        c2.metric("Cenário otimista", brl(p0.saldo_otim))
+        c3.metric("Cenário pessimista", brl(p0.saldo_pess))
+        st.caption("Otimista = mais entrada / menos saída · pessimista = o inverso "
+                   "(faixa de ±1 desvio-padrão sobre a média dos meses).")
 
 
 def pagina_doadores(d: pd.DataFrame):
@@ -467,12 +478,17 @@ def pagina_doadores(d: pd.DataFrame):
     if dd.empty:
         st.info("Sem doações registradas ainda.")
         return
-    show = dd.copy()
-    show["Total doado"] = show["Total doado"].map(brl)
-    show["Média/doação"] = show["Média/doação"].map(brl)
-    st.dataframe(show, use_container_width=True, hide_index=True)
-    st.caption("🔴 Atrasado · 🟡 Chegando a hora · 🟢 Em dia · ⚪ Doação única. "
-               "O intervalo é a média de dias entre as doações de cada pessoa.")
+    st.subheader("Total doado por doador")
+    st.bar_chart(dd.set_index("Doador")[["Total doado"]], height=240, color=VERDE)
+
+    st.subheader("Situação de cada doador")
+    for _, r in dd.iterrows():
+        prox = r["Próxima esperada"]
+        extra = f" · próxima esperada **{prox}**" if prox not in (None, "—") else ""
+        st.markdown(
+            f"{r['Status']} **{r['Doador']}** — {r['Nº doações']} doações, "
+            f"{brl(r['Total doado'])} no total · última em {r['Última doação']}{extra}")
+    st.caption("🔴 Atrasado · 🟡 Chegando a hora · 🟢 Em dia · ⚪ Doação única.")
 
 
 def pagina_reserva(d: pd.DataFrame):
@@ -503,25 +519,28 @@ def pagina_categorias(d: pd.DataFrame):
     if tc.empty:
         st.info("Sem saídas registradas ainda.")
         return
-    st.bar_chart(tc.set_index("Categoria")[["Total"]], height=320, color=VERDE)
-    show = tc.copy()
-    show["Total"] = show["Total"].map(brl)
-    show["Média/mês"] = show["Média/mês"].map(brl)
-    show["Tendência (R$/mês)"] = show["Tendência (R$/mês)"].map(lambda v: brl(v) + "/mês")
-    st.dataframe(show, use_container_width=True, hide_index=True)
-    st.caption("Tendência = variação média por mês (regressão linear). "
-               "↑ categorias crescentes merecem atenção.")
+    st.subheader("Total gasto por categoria")
+    st.bar_chart(tc.set_index("Categoria")[["Total"]], height=260, color=VERDE)
+
+    st.subheader("Tendência de cada categoria")
+    for _, r in tc.iterrows():
+        slope = r["Tendência (R$/mês)"]
+        sinal = "+" if slope >= 0 else ""
+        st.markdown(
+            f"{r['Classificação']} **{r['Categoria']}** — "
+            f"{brl(r['Média/mês'])}/mês em média ({sinal}{brl(slope)}/mês)")
+    st.caption("↑ Crescente · → Estável · ↓ Decrescente (variação média por mês, regressão linear).")
 
 
 # ----------------------------------------------------------------------
 # APP
 # ----------------------------------------------------------------------
 def main():
-    st.sidebar.title("🐾 Abrigo")
+    st.sidebar.title("🐾 " + NOME_ABRIGO)
     st.sidebar.caption("Controle financeiro")
 
     if not conectado():
-        st.title("🐾 Controle Financeiro — Abrigo de Animais")
+        st.title("🐾 " + NOME_ABRIGO)
         st.warning("App ainda não conectado à planilha Google.")
         st.markdown(
             "Para conectar, configure os **Secrets** com a conta de serviço do Google "
