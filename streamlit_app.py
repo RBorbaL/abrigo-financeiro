@@ -55,8 +55,8 @@ st.set_page_config(page_title=f"{NOME_ABRIGO} · Financeiro",
 st.markdown(
     """
     <style>
-      .block-container {padding-top: 1.1rem; padding-bottom: .6rem; max-width: 1400px;}
-      h1 {font-size: 1.6rem !important; margin-bottom: .15rem; color:#1b5e20;}
+      .block-container {padding-top: 3rem; padding-bottom: .6rem; max-width: 1400px;}
+      h1 {font-size: 1.6rem !important; margin-top: 0 !important; margin-bottom: .15rem; color:#1b5e20;}
       h2 {font-size: 1.15rem !important; margin: .15rem 0; color:#1b5e20;}
       h3 {font-size: 1.0rem !important; margin: .15rem 0; color:#1b5e20;}
       hr {margin: .45rem 0;}
