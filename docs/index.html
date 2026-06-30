@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Focinhos 🐾</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+        <defs>
+          <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#FF5E62"/><stop offset="1" stop-color="#FFB347"/>
+          </linearGradient>
+        </defs>
+        <g fill="url(#brandGrad)">
+          <path d="M7 6c-2.2 0-3.6 2.2-3.6 5.2 0 2 .7 3.8 1.9 4.7C6 12.4 7.6 9.6 9.7 7.6 8.9 6.6 8 6 7 6z"/>
+          <path d="M25 6c2.2 0 3.6 2.2 3.6 5.2 0 2-.7 3.8-1.9 4.7C26 12.4 24.4 9.6 22.3 7.6 23.1 6.6 24 6 25 6z"/>
+          <path d="M16 8c-4.6 0-8.3 4-8.3 9.1 0 4.6 3.7 7.4 8.3 7.4s8.3-2.8 8.3-7.4C24.3 12 20.6 8 16 8z"/>
+        </g>
+        <circle cx="16" cy="18.5" r="1.7" fill="#fff"/>
+        <circle cx="12.3" cy="15" r="1.1" fill="#fff"/>
+        <circle cx="19.7" cy="15" r="1.1" fill="#fff"/>
+      </svg>
+      <span class="brand-text">focinhos</span>
+    </div>
+    <nav id="nav" class="nav hidden">
+      <span id="who" class="who"></span>
+      <button id="btnTrocar" class="link">Trocar perfil</button>
+    </nav>
+  </header>
+
+  <main id="app">
+
+    <!-- ESCOLHA DE PAPEL -->
+    <section id="screen-home" class="screen">
+      <div class="hero">
+        <h1>Encontre um novo lar 🏡</h1>
+        <p>O encontro perfeito entre quem quer adotar e quem quer doar.</p>
+      </div>
+      <div class="role-cards">
+        <button class="role-card" data-role="adotante">
+          <span class="emoji">🙋</span>
+          <strong>Quero adotar</strong>
+          <small>Veja os bichinhos e dê like</small>
+        </button>
+        <button class="role-card" data-role="doador">
+          <span class="emoji">🏠</span>
+          <strong>Quero doar</strong>
+          <small>Cadastre um animal e receba interessados</small>
+        </button>
+      </div>
+    </section>
+
+    <!-- CADASTRO ADOTANTE -->
+    <section id="screen-adotante-cadastro" class="screen hidden">
+      <h2>Seu perfil de adotante</h2>
+      <form id="formAdotante" class="card form">
+        <h3 class="form-section">Sobre você</h3>
+        <label>Nome<input name="nome" required /></label>
+        <label>Idade<input name="idade" type="number" min="0" /></label>
+        <label>Profissão<input name="profissao" /></label>
+        <label>Tipo de moradia
+          <select name="moradia">
+            <option>Casa</option>
+            <option>Casa com quintal</option>
+            <option>Apartamento</option>
+            <option>Sítio / Chácara</option>
+            <option>Outro</option>
+          </select>
+        </label>
+        <label>Contato (e-mail/telefone)<input name="contato" /></label>
+        <label>Sobre você<textarea name="sobre" rows="2" placeholder="Rotina, tempo disponível, experiência com pets..."></textarea></label>
+
+        <h3 class="form-section">O que você procura 🔎</h3>
+        <p class="hint">Usamos isso para te mostrar só os bichinhos com o seu perfil.</p>
+        <label>Espécie
+          <select name="especiePref">
+            <option>Tanto faz</option>
+            <option>Cachorro</option>
+            <option>Gato</option>
+          </select>
+        </label>
+        <label>Porte
+          <select name="portePref">
+            <option>Tanto faz</option>
+            <option>Pequeno</option>
+            <option>Médio</option>
+            <option>Grande</option>
+          </select>
+        </label>
+        <label>Nível de energia que você comporta
+          <select name="energiaPref">
+            <option>Tanto faz</option>
+            <option value="Baixa">Baixa — pet mais calmo</option>
+            <option value="Média">Média</option>
+            <option value="Alta">Alta — adoro um pet agitado</option>
+          </select>
+        </label>
+        <label>Preferência de raça (opcional)<input name="racaPref" placeholder="Ex: Labrador, SRD..." /></label>
+        <label>Aceita um pet com cuidados especiais / problemas de saúde?
+          <select name="aceitaCuidadosEspeciais">
+            <option>Sim</option>
+            <option>Não</option>
+          </select>
+        </label>
+        <button type="submit" class="primary">Começar a ver bichinhos →</button>
+      </form>
+    </section>
+
+    <!-- SWIPE -->
+    <section id="screen-swipe" class="screen hidden">
+      <div class="tabs">
+        <button class="tab active" data-tab="deck">Descobrir</button>
+        <button class="tab" data-tab="meus-matches">Minhas conexões</button>
+      </div>
+
+      <div id="tab-deck" class="tabpane">
+        <div id="deck" class="deck"><!-- cards injetados --></div>
+        <div class="swipe-actions">
+          <button id="btnPass" class="circle pass" title="Passar">
+            <svg viewBox="0 0 24 24" width="28" height="28"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+          <button id="btnLike" class="circle like" title="Curtir">
+            <svg viewBox="0 0 24 24" width="30" height="30"><path fill="currentColor" d="M12 21s-7.5-4.9-10-9.3C.4 8.6 1.7 5 5 5c2 0 3.2 1.2 4 2.3C9.8 6.2 11 5 13 5c3.3 0 4.6 3.6 3 6.7C19.5 16.1 12 21 12 21z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="tab-meus-matches" class="tabpane hidden">
+        <div id="meusMatches" class="list"></div>
+      </div>
+    </section>
+
+    <!-- PAINEL DOADOR -->
+    <section id="screen-doador" class="screen hidden">
+      <div class="tabs">
+        <button class="tab active" data-tab="cadastrar">Cadastrar animal</button>
+        <button class="tab" data-tab="recebidas">Curtidas recebidas <span id="badgeRecebidas" class="badge hidden">0</span></button>
+        <button class="tab" data-tab="conversas">Conversas</button>
+      </div>
+
+      <div id="tab-cadastrar" class="tabpane">
+        <form id="formAnimal" class="card form">
+          <h3 class="form-section">Dados básicos</h3>
+          <label>Nome do animal<input name="nome" required /></label>
+          <label>Espécie
+            <select name="especie">
+              <option>Cachorro</option><option>Gato</option><option>Outro</option>
+            </select>
+          </label>
+          <label>Raça<input name="raca" placeholder="SRD, Vira-lata..." /></label>
+          <label>Idade<input name="idade" placeholder="Ex: 2 anos" /></label>
+          <label>Porte
+            <select name="porte"><option>Pequeno</option><option>Médio</option><option>Grande</option></select>
+          </label>
+          <label>Fotos (uma URL por linha)<textarea name="fotos" rows="2" placeholder="https://exemplo.com/foto1.jpg&#10;https://exemplo.com/foto2.jpg"></textarea></label>
+
+          <h3 class="form-section">Temperamento e necessidades</h3>
+          <label>Nível de energia
+            <select name="energia"><option>Baixa</option><option selected>Média</option><option>Alta</option></select>
+          </label>
+          <label>Nível de atenção que exige
+            <select name="atencao"><option>Baixa</option><option selected>Média</option><option>Alta</option></select>
+          </label>
+          <label>Temperamento<input name="temperamento" placeholder="Dócil, brincalhão, tímido..." /></label>
+          <div class="checks">
+            <label class="check"><input type="checkbox" name="bomComCriancas" /> Bom com crianças</label>
+            <label class="check"><input type="checkbox" name="bomComAnimais" /> Bom com outros animais</label>
+          </div>
+
+          <h3 class="form-section">Saúde 🩺</h3>
+          <div class="checks">
+            <label class="check"><input type="checkbox" name="castrado" /> Castrado</label>
+            <label class="check"><input type="checkbox" name="vacinado" /> Vacinado</label>
+            <label class="check"><input type="checkbox" name="vermifugado" /> Vermifugado</label>
+          </div>
+          <label>Estado de saúde<input name="saude" placeholder="Saudável, ou descreva condições..." /></label>
+          <label class="check check-destaque"><input type="checkbox" name="precisaCuidadoEspecial" id="chkCuidado" /> Precisa de cuidados especiais</label>
+          <label id="lblCuidados" class="hidden">Quais cuidados especiais?<textarea name="cuidadosEspeciais" rows="2" placeholder="Medicação contínua, dieta, mobilidade reduzida..."></textarea></label>
+
+          <label>Descrição geral<textarea name="descricao" rows="2" placeholder="História, rotina ideal, o que procura num tutor..."></textarea></label>
+          <button type="submit" class="primary">Publicar animal</button>
+        </form>
+        <h3 class="section-title">Meus animais publicados</h3>
+        <div id="meusAnimais" class="list"></div>
+      </div>
+
+      <div id="tab-recebidas" class="tabpane hidden">
+        <p class="hint">Pessoas que curtiram seus animais. Confirme para iniciar a conversa.</p>
+        <div id="recebidas" class="list"></div>
+      </div>
+
+      <div id="tab-conversas" class="tabpane hidden">
+        <div id="conversasDoador" class="list"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+  <div id="matchOverlay" class="match-overlay hidden"></div>
+  <div id="chatModal" class="chat-modal hidden"></div>
+  <script src="store.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
