@@ -1,0 +1,2 @@
+# Focinhos roda apenas com a biblioteca padrão do Python — sem dependências.
+# Este arquivo existe para o Render reconhecer o projeto como Python.

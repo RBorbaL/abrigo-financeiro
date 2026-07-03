@@ -1,0 +1,11 @@
+# Blueprint do Render para o app Focinhos (front + backend no mesmo serviço).
+# Ao conectar o repositório no Render, ele lê este arquivo e cria o serviço.
+services:
+  - type: web
+    name: focinhos
+    runtime: python
+    plan: free
+    rootDir: adota-match
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    # O Render injeta a env PORT automaticamente; o server.py já a utiliza.

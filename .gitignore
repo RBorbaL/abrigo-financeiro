@@ -1,0 +1,6 @@
+# Dados de runtime do app Focinhos (recriados a partir do seed)
+adota-match/data.json
+adota-match/data.json.tmp
+
+# Tooling local do Claude Code
+.claude/
