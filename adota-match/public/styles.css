@@ -81,8 +81,9 @@ body {
 .role-card .emoji {
   font-size: 2rem; width: 70px; height: 70px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  background: var(--grad-soft); margin-bottom: 4px;
+  background: var(--grad-soft); margin-bottom: 4px; color: var(--pink);
 }
+.role-card .emoji .ic { width: 34px; height: 34px; }
 .role-card strong { font-size: 1.2rem; font-weight: 700; }
 .role-card small { color: var(--muted); }
 
@@ -106,7 +107,9 @@ button.ghost {
   text-transform: uppercase; letter-spacing: .5px; transition: .15s;
 }
 button.ghost:hover { border-color: var(--pink); color: var(--pink); }
-.landing-pets { font-size: 2rem; margin-top: 34px; letter-spacing: 8px; }
+.landing-pets { display: flex; justify-content: center; gap: 22px; margin-top: 34px; color: var(--pink); }
+.landing-pets .ic { width: 34px; height: 34px; opacity: .9; }
+.landing-badge .ic { width: 1em; height: 1em; margin-right: 2px; }
 
 .landing-section { margin: 40px 0; text-align: center; }
 .landing-section h2 { margin-bottom: 22px; font-size: 1.5rem; }
@@ -124,7 +127,8 @@ button.ghost:hover { border-color: var(--pink); color: var(--pink); }
 
 .landing-roles { display: grid; gap: 16px; grid-template-columns: 1fr; }
 .lr-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-card); padding: 26px; box-shadow: var(--shadow-sm); text-align: center; }
-.lr-emoji { font-size: 2.4rem; display: block; margin-bottom: 8px; }
+.lr-emoji { display: block; margin-bottom: 10px; color: var(--pink); }
+.lr-emoji .ic { width: 44px; height: 44px; }
 .lr-card strong { font-size: 1.2rem; display: block; margin-bottom: 6px; }
 .lr-card p { color: var(--muted); font-size: .9rem; line-height: 1.5; }
 
@@ -135,20 +139,32 @@ button.ghost:hover { border-color: var(--pink); color: var(--pink); }
 .landing-final h2 { margin-bottom: 20px; }
 .landing-final button { width: auto; padding: 15px 30px; }
 
-/* botões de papel no cadastro de conta */
-.conta-roles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.conta-roles button { width: 100%; }
+/* ícones SVG reutilizáveis (traço, herda a cor) */
+.ic { width: 1.3em; height: 1.3em; fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round; display: inline-block; vertical-align: middle; }
+
+/* botões de papel no cadastro de conta (cards, não círculos) */
+.conta-roles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.role-opt {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 20px 12px; border-radius: 14px; border: 2px solid var(--border);
+  background: #fff; color: var(--text); cursor: pointer; font-family: inherit;
+  font-weight: 700; font-size: .95rem; transition: .15s;
+}
+.role-opt .ic { width: 30px; height: 30px; color: var(--pink); }
+.role-opt:hover { border-color: var(--pink); background: var(--grad-soft); transform: translateY(-2px); }
 .hint.center { text-align: center; }
 .hint .link { text-transform: none; letter-spacing: normal; font-size: inherit; }
 
 /* ===================== Forms ===================== */
 .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-card); padding: 24px; box-shadow: var(--shadow-sm); }
 .form { display: grid; gap: 14px; }
-.form label { display: grid; gap: 5px; font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+.form label { display: grid; gap: 5px; font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; min-width: 0; }
 .form input, .form select, .form textarea {
   padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 12px;
   font-size: .95rem; font-family: inherit; background: #fafafb; color: var(--text);
   transition: .15s; text-transform: none; letter-spacing: normal;
+  width: 100%; min-width: 0;  /* deixa o input encolher dentro do grid (corrige overflow) */
 }
 .form input::placeholder, .form textarea::placeholder { color: #bdbdc4; }
 .form input:focus, .form select:focus, .form textarea:focus {
@@ -426,6 +442,8 @@ h2 { margin-bottom: 18px; font-weight: 700; }
   .steps { grid-template-columns: repeat(3, 1fr); }
   .landing-roles { grid-template-columns: 1fr 1fr; }
   .landing-hero h1 { font-size: 3.4rem; }
+  /* forms pequenos (conta/login) ficam em coluna única */
+  #formConta, #formLogin { grid-template-columns: 1fr; }
 
   /* Swipe em paisagem no desktop: foto à esquerda, ficha à direita (sem scroll) */
   #tab-deck { max-width: 800px; }
