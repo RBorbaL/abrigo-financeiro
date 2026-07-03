@@ -1,12 +1,20 @@
 // ===================== Focinhos - frontend =====================
 
 const api = async (path, opts = {}) => {
-  const res = await fetch(path, {
-    headers: { "Content-Type": "application/json" },
-    ...opts,
-    body: opts.body ? JSON.stringify(opts.body) : undefined,
-  });
-  return res.json();
+  // tempo-limite: evita travar se o servidor grátis estiver "acordando"
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 30000);
+  try {
+    const res = await fetch(path, {
+      headers: { "Content-Type": "application/json" },
+      ...opts,
+      signal: ctrl.signal,
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+    return res.json();
+  } finally {
+    clearTimeout(timer);
+  }
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -108,9 +116,21 @@ async function startAdotante() {
 }
 
 async function loadDeck() {
-  const data = await api("/api/animais?adotanteId=" + state.adotante.id);
-  state.deck = data.animais || [];
-  renderDeck();
+  const deck = $("#deck");
+  $(".swipe-actions").style.visibility = "hidden";
+  deck.innerHTML = `<div class="empty"><span class="big">🐾</span>
+    Carregando bichinhos...<br><small>(o servidor pode levar alguns segundos para acordar)</small></div>`;
+  try {
+    const data = await api("/api/animais?adotanteId=" + state.adotante.id);
+    state.deck = data.animais || [];
+    renderDeck();
+  } catch (e) {
+    deck.innerHTML = `<div class="empty"><span class="big">😴</span>
+      Não consegui carregar agora.<br>O servidor pode estar acordando.<br>
+      <button class="primary" id="btnRetryDeck" style="margin-top:16px;width:auto;padding:12px 22px">Tentar de novo</button></div>`;
+    const btn = $("#btnRetryDeck");
+    if (btn) btn.addEventListener("click", loadDeck);
+  }
 }
 
 function emojiEspecie(esp) {
