@@ -1,2 +1,3 @@
-# Focinhos roda apenas com a biblioteca padrão do Python — sem dependências.
-# Este arquivo existe para o Render reconhecer o projeto como Python.
+# Focinhos usa a biblioteca padrão do Python + psycopg2 para o Postgres (Neon).
+# Sem DATABASE_URL, o app roda em modo arquivo local e nem importa o psycopg2.
+psycopg2-binary>=2.9

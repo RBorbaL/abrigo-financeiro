@@ -23,6 +23,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PUBLIC_DIR = os.path.join(BASE_DIR, "public")
 DATA_FILE = os.path.join(BASE_DIR, "data.json")
 
+# Persistência: se DATABASE_URL estiver definido (ex.: Neon/Postgres no Render),
+# o estado é guardado no banco; caso contrário, cai no arquivo local (dev).
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+
 _lock = threading.Lock()
 
 # --------------------------------------------------------------------------
@@ -103,7 +107,46 @@ def _seed():
     }
 
 
+def _db_connect():
+    import psycopg2
+    return psycopg2.connect(DATABASE_URL)
+
+
+def _db_ensure_schema():
+    """Cria a tabela de estado se ainda não existir (auto-provisiona no boot)."""
+    conn = _db_connect()
+    try:
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "CREATE TABLE IF NOT EXISTS app_state "
+                    "(id int PRIMARY KEY, data jsonb NOT NULL)"
+                )
+    finally:
+        conn.close()
+
+
 def load_data():
+    if DATABASE_URL:
+        from psycopg2.extras import Json
+        conn = _db_connect()
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT data FROM app_state WHERE id = 1")
+                    row = cur.fetchone()
+                    if row is None:
+                        seed = _seed()
+                        cur.execute(
+                            "INSERT INTO app_state (id, data) VALUES (1, %s)",
+                            [Json(seed)],
+                        )
+                        return seed
+                    data = row[0]
+                    return json.loads(data) if isinstance(data, str) else data
+        finally:
+            conn.close()
+    # fallback: arquivo local (desenvolvimento)
     if not os.path.exists(DATA_FILE):
         save_data(_seed())
     with open(DATA_FILE, "r", encoding="utf-8") as f:
@@ -111,6 +154,21 @@ def load_data():
 
 
 def save_data(data):
+    if DATABASE_URL:
+        from psycopg2.extras import Json
+        conn = _db_connect()
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "INSERT INTO app_state (id, data) VALUES (1, %s) "
+                        "ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data",
+                        [Json(data)],
+                    )
+        finally:
+            conn.close()
+        return
+    # fallback: arquivo local (desenvolvimento)
     tmp = DATA_FILE + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -438,10 +496,13 @@ def main():
     # Em hospedagem (ex.: Render) o host precisa ser 0.0.0.0 para aceitar
     # conexões externas; localmente 0.0.0.0 também é acessível via localhost.
     host = os.environ.get("HOST", "0.0.0.0")
-    load_data()  # garante data.json + seed
+    if DATABASE_URL:
+        _db_ensure_schema()          # cria a tabela se preciso
+    load_data()                      # garante seed (banco ou arquivo)
     server = ThreadingHTTPServer((host, port), Handler)
     print("=" * 50)
     print("  Focinhos rodando!")
+    print("  Persistência: %s" % ("Postgres (DATABASE_URL)" if DATABASE_URL else "arquivo local"))
     print("  Local:  http://localhost:%d" % port)
     print("  (Ctrl+C para parar)")
     print("=" * 50)
