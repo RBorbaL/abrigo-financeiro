@@ -159,7 +159,11 @@
           <label>Porte
             <select name="porte"><option>Pequeno</option><option>Médio</option><option>Grande</option></select>
           </label>
-          <label>Fotos (uma URL por linha)<textarea name="fotos" rows="2" placeholder="https://exemplo.com/foto1.jpg&#10;https://exemplo.com/foto2.jpg"></textarea></label>
+          <label>Fotos do dispositivo
+            <input type="file" id="fotoUpload" accept="image/*" multiple />
+          </label>
+          <div id="fotoPreviews" class="foto-previews"></div>
+          <label>Ou cole URLs de fotos (uma por linha)<textarea name="fotos" rows="2" placeholder="https://exemplo.com/foto1.jpg&#10;https://exemplo.com/foto2.jpg"></textarea></label>
 
           <h3 class="form-section">Temperamento e necessidades</h3>
           <label>Nível de energia

@@ -129,6 +129,23 @@ h2 { margin-bottom: 18px; font-weight: 700; }
 .check input { width: auto; accent-color: var(--pink); }
 .check-destaque { background: var(--grad-soft); padding: 10px 12px; border-radius: 12px; }
 
+/* upload de fotos */
+.form input[type="file"] {
+  padding: 10px; background: var(--grad-soft); border: 1.5px dashed var(--pink);
+  cursor: pointer; color: var(--text);
+}
+.foto-previews { display: flex; flex-wrap: wrap; gap: 8px; }
+.foto-previews:empty { display: none; }
+.foto-thumb {
+  position: relative; width: 74px; height: 74px; border-radius: 12px;
+  background-size: cover; background-position: center; border: 1px solid var(--border);
+}
+.foto-remove {
+  position: absolute; top: -6px; right: -6px; width: 22px; height: 22px;
+  border-radius: 50%; border: none; background: var(--nope); color: #fff;
+  cursor: pointer; font-size: .7rem; line-height: 1; box-shadow: var(--shadow-sm);
+}
+
 /* ===================== Tabs ===================== */
 .tabs { display: flex; gap: 6px; background: #fff; padding: 6px; border-radius: 999px; margin-bottom: 18px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
 .tab {

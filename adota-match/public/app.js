@@ -349,14 +349,69 @@ $("#chkCuidado").addEventListener("change", (e) => {
   $("#lblCuidados").classList.toggle("hidden", !e.target.checked);
 });
 
+// ---- upload de fotos: redimensiona no navegador e guarda como data URL ----
+let fotosUpload = [];
+
+function redimensionaImagem(file, max = 700, qualidade = 0.65) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > max) { height = height * max / width; width = max; }
+        else if (height > max) { width = width * max / height; height = max; }
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", qualidade));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderPreviews() {
+  const box = $("#fotoPreviews");
+  box.innerHTML = fotosUpload.map((src, i) =>
+    `<div class="foto-thumb" style="background-image:url('${src}')">
+       <button type="button" class="foto-remove" data-i="${i}" title="Remover">✕</button>
+     </div>`).join("");
+  box.querySelectorAll(".foto-remove").forEach((b) =>
+    b.addEventListener("click", () => {
+      fotosUpload.splice(Number(b.dataset.i), 1);
+      renderPreviews();
+    }));
+}
+
+$("#fotoUpload").addEventListener("change", async (e) => {
+  const files = [...e.target.files];
+  if (!files.length) return;
+  toast("Processando foto(s)...");
+  for (const file of files) {
+    try { fotosUpload.push(await redimensionaImagem(file)); }
+    catch { toast("Não consegui ler uma das imagens."); }
+  }
+  e.target.value = "";
+  renderPreviews();
+});
+
 $("#formAnimal").addEventListener("submit", async (e) => {
   e.preventDefault();
   const f = new FormData(e.target);
   const body = Object.fromEntries(f.entries());
   body.doadorId = state.doador.id;
+  // combina fotos enviadas (data URLs) + URLs coladas, enviando como ARRAY
+  const urls = (body.fotos || "").split("\n").map((s) => s.trim()).filter(Boolean);
+  body.fotos = [...fotosUpload, ...urls];
   const animal = await api("/api/animais", { method: "POST", body });
   if (animal.erro) return toast(animal.erro);
   e.target.reset();
+  fotosUpload = [];
+  renderPreviews();
   toast(`${animal.nome} publicado! 🐾`);
   loadMeusAnimais();
 });
