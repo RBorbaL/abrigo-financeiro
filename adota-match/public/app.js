@@ -21,6 +21,7 @@ const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
 const state = {
+  conta: null,       // conta logada (email/nome)
   role: null,        // 'adotante' | 'doador'
   adotante: null,    // perfil salvo
   doador: null,
@@ -35,7 +36,8 @@ function loadSession() {
 }
 function saveSession() {
   localStorage.setItem(LS, JSON.stringify({
-    role: state.role, adotante: state.adotante, doador: state.doador,
+    conta: state.conta, role: state.role,
+    adotante: state.adotante, doador: state.doador,
   }));
 }
 
@@ -62,36 +64,103 @@ function toast(msg) {
 
 function updateNav() {
   const nav = $("#nav");
-  if (state.role) {
+  if (state.conta) {
     nav.classList.remove("hidden");
-    const nome = state.role === "adotante"
-      ? (state.adotante && state.adotante.nome)
-      : (state.doador && state.doador.nome);
-    $("#who").textContent = nome ? `${nome} (${state.role})` : state.role;
+    const nome = state.conta.nome || state.conta.email;
+    $("#who").textContent = state.role ? `${nome} · ${state.role}` : nome;
   } else {
     nav.classList.add("hidden");
   }
 }
 
-// ===================== HOME =====================
+// --------- navegação por botões com data-goto ---------
+$$("[data-goto]").forEach((btn) => {
+  btn.addEventListener("click", () => show(btn.dataset.goto));
+});
+
+// --------- logout ---------
+$("#btnSair").addEventListener("click", () => {
+  if (!confirm("Deseja sair da sua conta?")) return;
+  localStorage.removeItem(LS);
+  state.conta = state.role = state.adotante = state.doador = null;
+  state.deck = [];
+  updateNav();
+  show("screen-landing");
+});
+
+// ===================== HOME (hub: escolher papel) =====================
 $$(".role-card").forEach((card) => {
   card.addEventListener("click", () => {
-    state.role = card.dataset.role;
-    if (state.role === "adotante") {
-      if (state.adotante) startAdotante();
-      else show("screen-adotante-cadastro");
-    } else {
-      ensureDoador().then(startDoador);
-    }
-    updateNav();
-    saveSession();
+    irParaPapel(card.dataset.role);
   });
 });
+
+// leva ao fluxo do papel escolhido (reaproveita perfil se já existir)
+function irParaPapel(role) {
+  state.role = role;
+  if (role === "adotante") {
+    if (state.adotante) startAdotante();
+    else { prefillDe("formAdotante"); show("screen-adotante-cadastro"); }
+  } else {
+    if (state.doador) startDoador();
+    else { prefillDe("formDoador"); show("screen-doador-cadastro"); }
+  }
+  updateNav();
+  saveSession();
+}
+
+// prefill de nome/contato a partir da conta logada
+function prefillDe(formId) {
+  const form = document.getElementById(formId);
+  if (!form || !state.conta) return;
+  if (form.nome && !form.nome.value) form.nome.value = state.conta.nome || "";
+  if (form.contato && !form.contato.value)
+    form.contato.value = state.conta.email || state.conta.telefone || "";
+}
 
 $("#btnTrocar").addEventListener("click", () => {
   state.role = null;
   updateNav();
   show("screen-home");
+});
+
+// ===================== CONTA / LOGIN =====================
+$("#formConta").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const role = (e.submitter && e.submitter.dataset.role) || "adotante";
+  const f = new FormData(e.target);
+  const body = Object.fromEntries(f.entries());
+  if (body.senha !== body.senha2) return toast("As senhas não conferem.");
+  delete body.senha2;
+  const conta = await api("/api/contas", { method: "POST", body });
+  if (conta.erro) return toast(conta.erro);
+  state.conta = conta;
+  saveSession();
+  updateNav();
+  toast(`Conta criada! Bem-vindo(a), ${conta.nome} 🐾`);
+  irParaPapel(role);
+});
+
+$("#formLogin").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const conta = await api("/api/login", { method: "POST", body: Object.fromEntries(f.entries()) });
+  if (conta.erro) return toast(conta.erro);
+  state.conta = conta;
+  saveSession();
+  updateNav();
+  toast(`Olá de novo, ${conta.nome}! 🐾`);
+  show("screen-home");
+});
+
+$("#formDoador").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const doador = await api("/api/doadores", { method: "POST", body: Object.fromEntries(new FormData(e.target).entries()) });
+  if (doador.erro) return toast(doador.erro);
+  state.doador = doador;
+  saveSession();
+  updateNav();
+  startDoador();
 });
 
 // ===================== ADOTANTE =====================
@@ -338,21 +407,6 @@ async function loadMeusMatches() {
 }
 
 // ===================== DOADOR =====================
-async function ensureDoador() {
-  if (state.doador) return;
-  // cria um doador simples na hora (poderia ter form próprio)
-  const nome = prompt("Seu nome ou nome do abrigo:", "Meu Lar");
-  const tipo = confirm("Você é um ABRIGO? (OK = abrigo, Cancelar = pessoa física)")
-    ? "abrigo" : "pessoa";
-  const contato = prompt("Contato (e-mail ou telefone):", "") || "";
-  const doador = await api("/api/doadores", {
-    method: "POST", body: { nome: nome || "Doador", tipo, contato },
-  });
-  state.doador = doador;
-  saveSession();
-  updateNav();
-}
-
 async function startDoador() {
   show("screen-doador");
   setupTabs($("#screen-doador .tabs"), (tab) => {
@@ -667,6 +721,6 @@ function escapeHtml(str) {
   const s = loadSession();
   Object.assign(state, s);
   updateNav();
-  // sempre começa na home (usuário escolhe o papel); perfis ficam lembrados
-  show("screen-home");
+  // sem conta -> landing; com conta -> hub de escolha de papel
+  show(state.conta ? "screen-home" : "screen-landing");
 })();

@@ -86,6 +86,61 @@ body {
 .role-card strong { font-size: 1.2rem; font-weight: 700; }
 .role-card small { color: var(--muted); }
 
+/* ===================== Landing ===================== */
+#screen-landing { max-width: 920px; margin: 0 auto; }
+#screen-conta, #screen-login { max-width: 460px; margin: 0 auto; }
+.grad-text { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+.landing-hero { text-align: center; padding: 30px 16px 40px; }
+.landing-badge {
+  display: inline-block; background: var(--grad-soft); color: var(--pink);
+  font-weight: 700; font-size: .78rem; padding: 6px 14px; border-radius: 999px; margin-bottom: 18px;
+}
+.landing-hero h1 { font-size: 2.7rem; font-weight: 800; line-height: 1.08; letter-spacing: -1px; }
+.landing-hero > p { color: var(--muted); font-size: 1.1rem; max-width: 520px; margin: 16px auto 0; line-height: 1.5; }
+.landing-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 28px; }
+.landing-cta button { padding: 15px 28px; font-size: .95rem; width: auto; }
+button.ghost {
+  background: #fff; color: var(--text); border: 1.5px solid var(--border);
+  border-radius: 999px; font-weight: 700; cursor: pointer; font-family: inherit;
+  text-transform: uppercase; letter-spacing: .5px; transition: .15s;
+}
+button.ghost:hover { border-color: var(--pink); color: var(--pink); }
+.landing-pets { font-size: 2rem; margin-top: 34px; letter-spacing: 8px; }
+
+.landing-section { margin: 40px 0; text-align: center; }
+.landing-section h2 { margin-bottom: 22px; font-size: 1.5rem; }
+.steps { display: grid; gap: 16px; grid-template-columns: 1fr; }
+.step {
+  background: #fff; border: 1px solid var(--border); border-radius: var(--radius-card);
+  padding: 24px 20px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.step-n {
+  width: 40px; height: 40px; border-radius: 50%; background: var(--grad); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: 800; margin-bottom: 8px;
+}
+.step strong { font-size: 1.05rem; }
+.step small { color: var(--muted); }
+
+.landing-roles { display: grid; gap: 16px; grid-template-columns: 1fr; }
+.lr-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-card); padding: 26px; box-shadow: var(--shadow-sm); text-align: center; }
+.lr-emoji { font-size: 2.4rem; display: block; margin-bottom: 8px; }
+.lr-card strong { font-size: 1.2rem; display: block; margin-bottom: 6px; }
+.lr-card p { color: var(--muted); font-size: .9rem; line-height: 1.5; }
+
+.landing-final {
+  text-align: center; background: var(--grad-soft); border-radius: var(--radius-card);
+  padding: 40px 24px; margin: 40px 0 10px;
+}
+.landing-final h2 { margin-bottom: 20px; }
+.landing-final button { width: auto; padding: 15px 30px; }
+
+/* botões de papel no cadastro de conta */
+.conta-roles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.conta-roles button { width: 100%; }
+.hint.center { text-align: center; }
+.hint .link { text-transform: none; letter-spacing: normal; font-size: inherit; }
+
 /* ===================== Forms ===================== */
 .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-card); padding: 24px; box-shadow: var(--shadow-sm); }
 .form { display: grid; gap: 14px; }
@@ -367,6 +422,10 @@ h2 { margin-bottom: 18px; font-weight: 700; }
 
   .role-cards { grid-template-columns: 1fr 1fr; }
   #screen-home { max-width: 660px; }
+
+  .steps { grid-template-columns: repeat(3, 1fr); }
+  .landing-roles { grid-template-columns: 1fr 1fr; }
+  .landing-hero h1 { font-size: 3.4rem; }
 
   /* Swipe em paisagem no desktop: foto à esquerda, ficha à direita (sem scroll) */
   #tab-deck { max-width: 800px; }

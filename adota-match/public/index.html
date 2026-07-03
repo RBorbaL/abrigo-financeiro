@@ -32,13 +32,87 @@
     <nav id="nav" class="nav hidden">
       <span id="who" class="who"></span>
       <button id="btnTrocar" class="link">Trocar perfil</button>
+      <button id="btnSair" class="link">Sair</button>
     </nav>
   </header>
 
   <main id="app">
 
-    <!-- ESCOLHA DE PAPEL -->
-    <section id="screen-home" class="screen">
+    <!-- LANDING PAGE -->
+    <section id="screen-landing" class="screen">
+      <div class="landing-hero">
+        <div class="landing-badge">🐾 adoção que dá match</div>
+        <h1>Cada focinho<br>merece um <span class="grad-text">lar</span></h1>
+        <p>O jeito mais simples e carinhoso de conectar quem quer adotar com quem precisa doar. Deslize, combine e transforme uma vida. 🧡</p>
+        <div class="landing-cta">
+          <button class="primary" data-goto="screen-conta">Criar conta grátis</button>
+          <button class="ghost" data-goto="screen-login">Já tenho conta</button>
+        </div>
+        <div class="landing-pets">🐶 🐱 🐰 🐾 🏡</div>
+      </div>
+
+      <div class="landing-section">
+        <h2>Como funciona</h2>
+        <div class="steps">
+          <div class="step"><span class="step-n">1</span><strong>Crie sua conta</strong><small>Rápido, com e-mail e senha.</small></div>
+          <div class="step"><span class="step-n">2</span><strong>Monte seu perfil</strong><small>Como adotante ou como doador — ou os dois.</small></div>
+          <div class="step"><span class="step-n">3</span><strong>Dê match e converse</strong><small>Curtiu? Combinou? É só conversar e adotar.</small></div>
+        </div>
+      </div>
+
+      <div class="landing-section">
+        <h2>Pra quem é</h2>
+        <div class="landing-roles">
+          <div class="lr-card">
+            <span class="lr-emoji">🙋</span>
+            <strong>Quero adotar</strong>
+            <p>Diga suas preferências (espécie, porte, energia) e veja só os bichinhos com a sua cara.</p>
+          </div>
+          <div class="lr-card">
+            <span class="lr-emoji">🏠</span>
+            <strong>Quero doar</strong>
+            <p>Pessoa física ou abrigo: publique o animal com fotos e ficha completa, e escolha com quem conversar.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="landing-final">
+        <h2>Pronto pra mudar uma vida? 🐾</h2>
+        <button class="primary" data-goto="screen-conta">Criar conta grátis</button>
+      </div>
+    </section>
+
+    <!-- CADASTRO DE CONTA -->
+    <section id="screen-conta" class="screen hidden">
+      <h2>Criar sua conta</h2>
+      <form id="formConta" class="card form">
+        <label>Nome<input name="nome" required autocomplete="name" /></label>
+        <label>E-mail<input name="email" type="email" required autocomplete="email" /></label>
+        <label>Telefone (opcional)<input name="telefone" autocomplete="tel" /></label>
+        <label>Senha<input name="senha" type="password" minlength="6" required autocomplete="new-password" placeholder="mín. 6 caracteres" /></label>
+        <label>Confirmar senha<input name="senha2" type="password" required autocomplete="new-password" /></label>
+        <p class="hint">Como você quer usar o Focinhos? (dá pra fazer os dois depois)</p>
+        <div class="conta-roles">
+          <button type="submit" class="primary" data-role="adotante">🙋 Quero adotar</button>
+          <button type="submit" class="secondary" data-role="doador">🏠 Quero doar</button>
+        </div>
+        <p class="hint center">Já tem conta? <button type="button" class="link" data-goto="screen-login">Entrar</button></p>
+      </form>
+    </section>
+
+    <!-- LOGIN -->
+    <section id="screen-login" class="screen hidden">
+      <h2>Entrar</h2>
+      <form id="formLogin" class="card form">
+        <label>E-mail<input name="email" type="email" required autocomplete="email" /></label>
+        <label>Senha<input name="senha" type="password" required autocomplete="current-password" /></label>
+        <button type="submit" class="primary">Entrar</button>
+        <p class="hint center">Não tem conta? <button type="button" class="link" data-goto="screen-conta">Criar conta</button></p>
+      </form>
+    </section>
+
+    <!-- ESCOLHA DE PAPEL (hub do usuário logado) -->
+    <section id="screen-home" class="screen hidden">
       <div class="hero">
         <h1>Encontre um novo lar 🏡</h1>
         <p>O encontro perfeito entre quem quer adotar e quem quer doar.</p>
@@ -135,6 +209,22 @@
       <div id="tab-meus-matches" class="tabpane hidden">
         <div id="meusMatches" class="list"></div>
       </div>
+    </section>
+
+    <!-- CADASTRO DOADOR -->
+    <section id="screen-doador-cadastro" class="screen hidden">
+      <h2>Seu perfil de doador</h2>
+      <form id="formDoador" class="card form">
+        <label>Nome / nome do abrigo<input name="nome" required /></label>
+        <label>Você é
+          <select name="tipo">
+            <option value="pessoa">Pessoa física</option>
+            <option value="abrigo">Abrigo / ONG</option>
+          </select>
+        </label>
+        <label>Contato (e-mail ou telefone)<input name="contato" /></label>
+        <button type="submit" class="primary">Continuar →</button>
+      </form>
     </section>
 
     <!-- PAINEL DOADOR -->

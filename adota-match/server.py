@@ -15,6 +15,8 @@ import json
 import os
 import uuid
 import threading
+import hashlib
+import secrets
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
@@ -104,6 +106,7 @@ def _seed():
         "adotantes": [],
         "likes": [],
         "mensagens": [],
+        "contas": [],
     }
 
 
@@ -174,6 +177,20 @@ def save_data(data):
 
 def new_id():
     return uuid.uuid4().hex[:12]
+
+
+def _hash_senha(senha, salt=None):
+    """Hash de senha com PBKDF2-SHA256 + salt (nunca guardamos texto puro)."""
+    if salt is None:
+        salt = secrets.token_hex(16)
+    dk = hashlib.pbkdf2_hmac("sha256", senha.encode("utf-8"),
+                             salt.encode("utf-8"), 120000)
+    return salt, dk.hex()
+
+
+def _conta_publica(conta):
+    """Remove campos sensíveis antes de devolver a conta ao cliente."""
+    return {k: v for k, v in conta.items() if k not in ("senha_hash", "salt")}
 
 
 def combina_com_preferencias(animal, adotante):
@@ -414,6 +431,44 @@ def api_handle(method, path, query, body):
             like_id = query.get("likeId", [None])[0]
             msgs = [m for m in data.get("mensagens", []) if m["likeId"] == like_id]
             return 200, {"mensagens": msgs}
+
+        # ---- CONTAS: cadastro (email + senha) ----
+        if path == "/api/contas" and method == "POST":
+            nome = body.get("nome", "").strip()
+            email = body.get("email", "").strip().lower()
+            senha = body.get("senha", "")
+            telefone = body.get("telefone", "").strip()
+            if not nome or not email or not senha:
+                return 400, {"erro": "Nome, e-mail e senha são obrigatórios"}
+            if "@" not in email or "." not in email.split("@")[-1]:
+                return 400, {"erro": "E-mail inválido"}
+            if len(senha) < 6:
+                return 400, {"erro": "A senha precisa de ao menos 6 caracteres"}
+            contas = data.setdefault("contas", [])
+            if any(c["email"] == email for c in contas):
+                return 409, {"erro": "Já existe uma conta com esse e-mail"}
+            salt, senha_hash = _hash_senha(senha)
+            conta = {
+                "id": new_id(), "nome": nome, "email": email,
+                "telefone": telefone, "salt": salt, "senha_hash": senha_hash,
+                "criadoEm": datetime.now().strftime("%Y-%m-%d"),
+            }
+            contas.append(conta)
+            save_data(data)
+            return 201, _conta_publica(conta)
+
+        # ---- LOGIN ----
+        if path == "/api/login" and method == "POST":
+            email = body.get("email", "").strip().lower()
+            senha = body.get("senha", "")
+            conta = next((c for c in data.get("contas", [])
+                          if c["email"] == email), None)
+            if not conta:
+                return 401, {"erro": "E-mail ou senha inválidos"}
+            _, tentativa = _hash_senha(senha, conta["salt"])
+            if not secrets.compare_digest(tentativa, conta["senha_hash"]):
+                return 401, {"erro": "E-mail ou senha inválidos"}
+            return 200, _conta_publica(conta)
 
         return 404, {"erro": "Rota não encontrada"}
 
