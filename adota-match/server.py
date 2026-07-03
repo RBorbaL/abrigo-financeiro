@@ -109,21 +109,16 @@ def _seed():
 
 def _db_connect():
     import psycopg2
-    return psycopg2.connect(DATABASE_URL)
+    # connect_timeout evita que o boot/uma requisição trave indefinidamente
+    # se o banco estiver inacessível.
+    return psycopg2.connect(DATABASE_URL, connect_timeout=10)
 
 
-def _db_ensure_schema():
-    """Cria a tabela de estado se ainda não existir (auto-provisiona no boot)."""
-    conn = _db_connect()
-    try:
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "CREATE TABLE IF NOT EXISTS app_state "
-                    "(id int PRIMARY KEY, data jsonb NOT NULL)"
-                )
-    finally:
-        conn.close()
+def _db_ensure_schema(cur):
+    cur.execute(
+        "CREATE TABLE IF NOT EXISTS app_state "
+        "(id int PRIMARY KEY, data jsonb NOT NULL)"
+    )
 
 
 def load_data():
@@ -133,6 +128,7 @@ def load_data():
         try:
             with conn:
                 with conn.cursor() as cur:
+                    _db_ensure_schema(cur)  # cria a tabela se ainda não existir
                     cur.execute("SELECT data FROM app_state WHERE id = 1")
                     row = cur.fetchone()
                     if row is None:
@@ -160,6 +156,7 @@ def save_data(data):
         try:
             with conn:
                 with conn.cursor() as cur:
+                    _db_ensure_schema(cur)
                     cur.execute(
                         "INSERT INTO app_state (id, data) VALUES (1, %s) "
                         "ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data",
@@ -509,9 +506,16 @@ def main():
     # Em hospedagem (ex.: Render) o host precisa ser 0.0.0.0 para aceitar
     # conexões externas; localmente 0.0.0.0 também é acessível via localhost.
     host = os.environ.get("HOST", "0.0.0.0")
-    if DATABASE_URL:
-        _db_ensure_schema()          # cria a tabela se preciso
-    load_data()                      # garante seed (banco ou arquivo)
+    # IMPORTANTE: sobe o servidor primeiro (não bloqueia o boot no banco).
+    # O schema/seed é preparado sob demanda em load_data/save_data, e falhas
+    # de conexão não derrubam o processo — apenas as requisições afetadas.
+    if not DATABASE_URL:
+        load_data()                  # modo arquivo: garante data.json + seed
+    else:
+        try:
+            load_data()              # prepara schema + seed no banco (best-effort)
+        except Exception as e:
+            print("Aviso: banco indisponível no boot (%s). Tentarei sob demanda." % e)
     server = ThreadingHTTPServer((host, port), Handler)
     print("=" * 50)
     print("  Focinhos rodando!")
