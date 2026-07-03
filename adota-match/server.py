@@ -464,6 +464,19 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/health":
+            # diagnóstico: informa o modo de persistência e se o banco responde
+            mode = "postgres" if DATABASE_URL else "arquivo"
+            db_ok = None
+            if DATABASE_URL:
+                try:
+                    conn = _db_connect()
+                    conn.close()
+                    db_ok = True
+                except Exception:
+                    db_ok = False
+            self._send_json(200, {"ok": True, "mode": mode, "db_ok": db_ok})
+            return
         if parsed.path.startswith("/api/"):
             query = parse_qs(parsed.query)
             status, payload = api_handle("GET", parsed.path, query, {})
