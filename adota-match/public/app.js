@@ -137,7 +137,7 @@ $("#formConta").addEventListener("submit", async (e) => {
   state.conta = conta;
   saveSession();
   updateNav();
-  toast(`Conta criada! Bem-vindo(a), ${conta.nome} 🐾`);
+  toast(`Conta criada! Bem-vindo(a), ${conta.nome}`);
   irParaPapel(role);
 });
 
@@ -149,7 +149,7 @@ $("#formLogin").addEventListener("submit", async (e) => {
   state.conta = conta;
   saveSession();
   updateNav();
-  toast(`Olá de novo, ${conta.nome}! 🐾`);
+  toast(`Olá de novo, ${conta.nome}!`);
   show("screen-home");
 });
 
@@ -187,14 +187,14 @@ async function startAdotante() {
 async function loadDeck() {
   const deck = $("#deck");
   $(".swipe-actions").style.visibility = "hidden";
-  deck.innerHTML = `<div class="empty"><span class="big">🐾</span>
+  deck.innerHTML = `<div class="empty"><span class="big">${ic("paw")}</span>
     Carregando bichinhos...<br><small>(o servidor pode levar alguns segundos para acordar)</small></div>`;
   try {
     const data = await api("/api/animais?adotanteId=" + state.adotante.id);
     state.deck = data.animais || [];
     renderDeck();
   } catch (e) {
-    deck.innerHTML = `<div class="empty"><span class="big">😴</span>
+    deck.innerHTML = `<div class="empty"><span class="big">${ic("paw")}</span>
       Não consegui carregar agora.<br>O servidor pode estar acordando.<br>
       <button class="primary" id="btnRetryDeck" style="margin-top:16px;width:auto;padding:12px 22px">Tentar de novo</button></div>`;
     const btn = $("#btnRetryDeck");
@@ -202,17 +202,22 @@ async function loadDeck() {
   }
 }
 
+// ícone SVG reutilizável (usa os <symbol> definidos no HTML)
+function ic(name, cls) {
+  return `<svg class="ic${cls ? " " + cls : ""}"><use href="#ic-${name}"/></svg>`;
+}
+
 function emojiEspecie(esp) {
-  return esp === "Gato" ? "🐱" : esp === "Cachorro" ? "🐶" : "🐾";
+  return ic("paw");  // patinha para todas as espécies (o texto já indica qual)
 }
 
 function selosSaude(a) {
   const selos = [];
-  if (a.castrado) selos.push(`<span class="selo selo-ok">✔ Castrado</span>`);
-  if (a.vacinado) selos.push(`<span class="selo selo-ok">✔ Vacinado</span>`);
-  if (a.vermifugado) selos.push(`<span class="selo selo-ok">✔ Vermifugado</span>`);
+  if (a.castrado) selos.push(`<span class="selo selo-ok">${ic("check")} Castrado</span>`);
+  if (a.vacinado) selos.push(`<span class="selo selo-ok">${ic("check")} Vacinado</span>`);
+  if (a.vermifugado) selos.push(`<span class="selo selo-ok">${ic("check")} Vermifugado</span>`);
   if (a.saude && a.saude.toLowerCase() !== "saudável" && a.saude.toLowerCase() !== "saudavel")
-    selos.push(`<span class="selo selo-alerta">🩺 ${escapeHtml(a.saude)}</span>`);
+    selos.push(`<span class="selo selo-alerta">${ic("health")} ${escapeHtml(a.saude)}</span>`);
   return selos.join(" ");
 }
 
@@ -220,7 +225,7 @@ function renderDeck() {
   const deck = $("#deck");
   deck.innerHTML = "";
   if (state.deck.length === 0) {
-    deck.innerHTML = `<div class="empty"><span class="big">🐾</span>
+    deck.innerHTML = `<div class="empty"><span class="big">${ic("paw")}</span>
       Você viu todos os bichinhos por enquanto!<br>Volte mais tarde.</div>`;
     $(".swipe-actions").style.visibility = "hidden";
     return;
@@ -256,13 +261,13 @@ function renderDeck() {
       </div>
       <div class="info">
         <div class="tags">
-          ${animal.energia ? `<span class="tag tag-energia">⚡ Energia ${escapeHtml(animal.energia)}</span>` : ""}
-          ${animal.atencao ? `<span class="tag">👀 Atenção ${escapeHtml(animal.atencao)}</span>` : ""}
-          ${animal.bomComCriancas ? `<span class="tag tag-ok">👶 Crianças</span>` : ""}
-          ${animal.bomComAnimais ? `<span class="tag tag-ok">🐾 Outros pets</span>` : ""}
+          ${animal.energia ? `<span class="tag tag-energia">${ic("bolt")} Energia ${escapeHtml(animal.energia)}</span>` : ""}
+          ${animal.atencao ? `<span class="tag">${ic("eye")} Atenção ${escapeHtml(animal.atencao)}</span>` : ""}
+          ${animal.bomComCriancas ? `<span class="tag tag-ok">${ic("smile")} Crianças</span>` : ""}
+          ${animal.bomComAnimais ? `<span class="tag tag-ok">${ic("paw")} Outros pets</span>` : ""}
         </div>
         <div class="selos">${selosSaude(animal)}</div>
-        ${animal.precisaCuidadoEspecial ? `<div class="alerta-cuidado">⚠️ Cuidados especiais: ${escapeHtml(animal.cuidadosEspeciais || animal.saude || "sim")}</div>` : ""}
+        ${animal.precisaCuidadoEspecial ? `<div class="alerta-cuidado">${ic("alert")} Cuidados especiais: ${escapeHtml(animal.cuidadosEspeciais || animal.saude || "sim")}</div>` : ""}
         ${animal.temperamento ? `<div class="desc"><strong>Temperamento:</strong> ${escapeHtml(animal.temperamento)}</div>` : ""}
         ${animal.descricao ? `<div class="desc">${escapeHtml(animal.descricao)}</div>` : ""}
       </div>`;
@@ -348,7 +353,7 @@ async function decide(decisao, animal, card, dir) {
     method: "POST",
     body: { adotanteId: state.adotante.id, animalId: animal.id, decisao },
   });
-  if (decisao === "like") toast(`Você curtiu ${animal.nome}! 💚`);
+  if (decisao === "like") toast(`Você curtiu ${animal.nome}!`);
   setTimeout(renderDeck, 280);
 }
 
@@ -369,15 +374,15 @@ async function loadMeusMatches() {
   const box = $("#meusMatches");
   const matches = data.matches || [];
   if (matches.length === 0) {
-    box.innerHTML = `<div class="empty"><span class="big">💌</span>
+    box.innerHTML = `<div class="empty"><span class="big">${ic("mail")}</span>
       Nenhuma conexão ainda.<br>Quando um doador aceitar seu interesse, aparece aqui.</div>`;
     return;
   }
   box.innerHTML = matches.map((m) => `
     <div class="match-banner">
-      <div style="font-size:1.5rem">🎉 Você se conectou com ${escapeHtml(m.animal.nome)}!</div>
+      <div class="mb-titulo">${ic("sparkle")} Você se conectou com ${escapeHtml(m.animal.nome)}!</div>
       <div>Doado por <strong>${escapeHtml(m.doador ? m.doador.nome : "")}</strong></div>
-      <div class="contato">📞 Contato: ${escapeHtml((m.doador && m.doador.contato) || "não informado")}</div>
+      <div class="contato">${ic("phone")} Contato: ${escapeHtml((m.doador && m.doador.contato) || "não informado")}</div>
       <button class="mo-cta" style="margin-top:12px" data-chat="${m.likeId}"
         data-titulo="${escapeHtml((m.doador ? m.doador.nome : "Doador") + " · " + m.animal.nome)}">Abrir conversa</button>
     </div>`).join("");
@@ -396,7 +401,7 @@ async function loadMeusMatches() {
       subtitulo: `Você se conectou com ${m.animal.nome}!`,
       animalFoto: m.animal.foto,
       animalEmoji: emojiEspecie(m.animal.especie),
-      parceiroEmoji: "🏡",
+      parceiroEmoji: ic("house"),
       contato: m.doador && m.doador.contato,
       ctaLabel: "Abrir conversa",
       onCta: () => openChat(m.likeId,
@@ -486,7 +491,7 @@ $("#formAnimal").addEventListener("submit", async (e) => {
   e.target.reset();
   fotosUpload = [];
   renderPreviews();
-  toast(`${animal.nome} publicado! 🐾`);
+  toast(`${animal.nome} publicado!`);
   loadMeusAnimais();
 });
 
@@ -505,9 +510,9 @@ async function loadMeusAnimais() {
       <div class="body">
         <strong>${escapeHtml(a.nome)}</strong>
         <small>${escapeHtml(a.raca || a.especie)} · ${escapeHtml(a.idade || "")} · ${escapeHtml(a.porte || "")}</small>
-        <small>⚡ Energia ${escapeHtml(a.energia || "—")} · 👀 Atenção ${escapeHtml(a.atencao || "—")}</small>
+        <small>${ic("bolt")} Energia ${escapeHtml(a.energia || "—")} · ${ic("eye")} Atenção ${escapeHtml(a.atencao || "—")}</small>
         <div class="selos">${selosSaude(a)}</div>
-        ${a.precisaCuidadoEspecial ? `<small class="txt-alerta">⚠️ Cuidados especiais: ${escapeHtml(a.cuidadosEspeciais || a.saude || "sim")}</small>` : ""}
+        ${a.precisaCuidadoEspecial ? `<small class="txt-alerta">${ic("alert")} Cuidados especiais: ${escapeHtml(a.cuidadosEspeciais || a.saude || "sim")}</small>` : ""}
       </div>
     </div>`).join("");
 }
@@ -524,7 +529,7 @@ async function loadRecebidas() {
     badge.classList.add("hidden");
   }
   if (recebidas.length === 0) {
-    box.innerHTML = `<div class="empty"><span class="big">📭</span>
+    box.innerHTML = `<div class="empty"><span class="big">${ic("mail")}</span>
       Nenhuma curtida pendente.</div>`;
     return;
   }
@@ -532,14 +537,14 @@ async function loadRecebidas() {
     const ad = r.adotante || {};
     return `
     <div class="item">
-      <div class="avatar">🙋</div>
+      <div class="avatar">${ic("person")}</div>
       <div class="body">
         <strong>${escapeHtml(ad.nome || "Adotante")} ${ad.idade ? "· " + ad.idade + " anos" : ""}</strong>
-        <small>💼 ${escapeHtml(ad.profissao || "—")} · 🏠 ${escapeHtml(ad.moradia || "—")}</small>
-        <small>❤ Curtiu: <strong>${escapeHtml(r.animal.nome)}</strong></small>
-        <small>🩺 Aceita cuidados especiais: <strong>${escapeHtml(ad.aceitaCuidadosEspeciais || "—")}</strong></small>
+        <small>${ic("briefcase")} ${escapeHtml(ad.profissao || "—")} · ${ic("house")} ${escapeHtml(ad.moradia || "—")}</small>
+        <small>${ic("heart")} Curtiu: <strong>${escapeHtml(r.animal.nome)}</strong></small>
+        <small>${ic("health")} Aceita cuidados especiais: <strong>${escapeHtml(ad.aceitaCuidadosEspeciais || "—")}</strong></small>
         ${ad.sobre ? `<small>“${escapeHtml(ad.sobre)}”</small>` : ""}
-        ${ad.contato ? `<small>📞 ${escapeHtml(ad.contato)}</small>` : ""}
+        ${ad.contato ? `<small>${ic("phone")} ${escapeHtml(ad.contato)}</small>` : ""}
       </div>
       <div class="actions">
         <button class="btn-aceitar" data-like="${r.likeId}" data-status="aceito">Conversar</button>
@@ -560,8 +565,8 @@ async function loadRecebidas() {
         showMatchOverlay({
           subtitulo: `${ad.nome || "O adotante"} quer dar um lar pro ${r.animal ? r.animal.nome : "pet"}`,
           animalFoto: r.animal && r.animal.foto,
-          animalEmoji: r.animal ? emojiEspecie(r.animal.especie) : "🐾",
-          parceiroEmoji: "🙋",
+          animalEmoji: r.animal ? emojiEspecie(r.animal.especie) : ic("paw"),
+          parceiroEmoji: ic("person"),
           contato: ad.contato,
           ctaLabel: "Abrir conversa",
           onCta: () => openChat(btn.dataset.like,
@@ -580,7 +585,7 @@ async function loadConversasDoador() {
   const box = $("#conversasDoador");
   const matches = data.matches || [];
   if (matches.length === 0) {
-    box.innerHTML = `<div class="empty"><span class="big">💬</span>
+    box.innerHTML = `<div class="empty"><span class="big">${ic("chat")}</span>
       Nenhuma conversa iniciada ainda.</div>`;
     return;
   }
@@ -588,11 +593,11 @@ async function loadConversasDoador() {
     const ad = m.adotante || {};
     return `
     <div class="item">
-      <div class="avatar">🙋</div>
+      <div class="avatar">${ic("person")}</div>
       <div class="body">
         <strong>${escapeHtml(ad.nome || "Adotante")}</strong>
         <small>Interessado(a) em <strong>${escapeHtml(m.animal.nome)}</strong></small>
-        <small>📞 ${escapeHtml(ad.contato || "contato não informado")}</small>
+        <small>${ic("phone")} ${escapeHtml(ad.contato || "contato não informado")}</small>
       </div>
       <div class="actions">
         <button class="btn-aceitar" data-chat="${m.likeId}"
@@ -617,11 +622,11 @@ function showMatchOverlay(opts) {
       <div class="mo-title">Vocês se encontraram!</div>
       <div class="mo-sub">${escapeHtml(opts.subtitulo || "")}</div>
       <div class="mo-photos">
-        <div class="mo-photo" ${fotoA}>${opts.animalFoto ? "" : (opts.animalEmoji || "🐾")}</div>
-        <div class="mo-heart">❤</div>
-        <div class="mo-photo mo-emoji">${opts.parceiroEmoji || "🙋"}</div>
+        <div class="mo-photo" ${fotoA}>${opts.animalFoto ? "" : (opts.animalEmoji || ic("paw"))}</div>
+        <div class="mo-heart">${ic("heart")}</div>
+        <div class="mo-photo mo-emoji">${opts.parceiroEmoji || ic("person")}</div>
       </div>
-      ${opts.contato ? `<div class="mo-contato">📞 ${escapeHtml(opts.contato)}</div>` : ""}
+      ${opts.contato ? `<div class="mo-contato">${ic("phone")} ${escapeHtml(opts.contato)}</div>` : ""}
       <button class="mo-cta">${escapeHtml(opts.ctaLabel || "Enviar mensagem")}</button>
       <button class="mo-close">Continuar vendo</button>
     </div>`;
@@ -653,7 +658,7 @@ async function openChat(likeId, titulo, autor) {
   modal.innerHTML = `
     <div class="chat-box">
       <div class="chat-header">
-        <span>💬 ${escapeHtml(titulo)}</span>
+        <span>${ic("chat")} ${escapeHtml(titulo)}</span>
         <button class="chat-close" title="Fechar">✕</button>
       </div>
       <div class="chat-msgs" id="chatMsgs"></div>
@@ -689,7 +694,7 @@ async function loadChatMsgs() {
         <div class="bubble ${m.autor === chatState.autor ? "mine" : "theirs"}">
           <span>${escapeHtml(m.texto)}</span><time>${escapeHtml(m.hora || "")}</time>
         </div>`).join("")
-    : `<div class="chat-empty">Diga olá! 👋<br>Combinem os detalhes da adoção.</div>`;
+    : `<div class="chat-empty">Diga olá!<br>Combinem os detalhes da adoção.</div>`;
   box.scrollTop = box.scrollHeight;
 }
 

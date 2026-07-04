@@ -140,8 +140,20 @@ button.ghost:hover { border-color: var(--pink); color: var(--pink); }
 .landing-final button { width: auto; padding: 15px 30px; }
 
 /* ícones SVG reutilizáveis (traço, herda a cor) */
-.ic { width: 1.3em; height: 1.3em; fill: none; stroke: currentColor; stroke-width: 2;
-  stroke-linecap: round; stroke-linejoin: round; display: inline-block; vertical-align: middle; }
+.ic { width: 1.15em; height: 1.15em; fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round; display: inline-block; vertical-align: -.18em; flex-shrink: 0; }
+
+/* tamanhos por contexto */
+.empty .big .ic { width: 3rem; height: 3rem; color: var(--pink); opacity: .5; }
+.item .avatar .ic { width: 28px; height: 28px; color: var(--pink); }
+.swipe-card .photo .fallback .ic { width: 5rem; height: 5rem; color: var(--pink); opacity: .55; }
+.mo-photo .ic { width: 58px; height: 58px; color: #fff; }
+.mo-heart .ic { width: 28px; height: 28px; }
+.tag .ic, .selo .ic { margin-right: 2px; }
+.item .body small .ic { color: var(--muted); margin-right: 1px; }
+.match-banner .contato .ic { width: 1em; height: 1em; }
+.mb-titulo { font-size: 1.35rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.chat-header .ic { width: 1.1em; height: 1.1em; }
 
 /* botões de papel no cadastro de conta (cards, não círculos) */
 .conta-roles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
