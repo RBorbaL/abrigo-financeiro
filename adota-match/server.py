@@ -48,7 +48,8 @@ def _seed():
 
 
 # nomes de animais criados durante testes internos (removidos na limpeza)
-_ANIMAIS_TESTE = {"AnimalComFoto", "TestePix", "FotoTeste", "Rex Upload"}
+_ANIMAIS_TESTE = {"AnimalComFoto", "TestePix", "FotoTeste", "Rex Upload",
+                  "Rex Real", "Luna Auditoria"}
 
 
 def limpar_amostra(data):
@@ -354,7 +355,8 @@ def api_handle(method, path, query, body):
             doadores = {d["id"]: d for d in data["doadores"]}
             matches = []
             for l in data["likes"]:
-                if l["status"] != "aceito":
+                # inclui conversas aceitas E adoções já finalizadas
+                if l["status"] not in ("aceito", "adotado"):
                     continue
                 animal = animais.get(l["animalId"])
                 if not animal:
@@ -368,6 +370,7 @@ def api_handle(method, path, query, body):
                     "animal": animal,
                     "adotante": adotantes.get(l["adotanteId"]),
                     "doador": doadores.get(animal["doadorId"]),
+                    "adotado": l["status"] == "adotado",
                 })
             return 200, {"matches": matches}
 

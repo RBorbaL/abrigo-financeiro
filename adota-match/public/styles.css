@@ -513,4 +513,8 @@ h2 { margin-bottom: 18px; font-weight: 700; }
 .termo-acoes { display: flex; gap: 10px; margin-top: 18px; }
 .termo-acoes button { flex: 1; padding: 13px; }
 
+/* botão em carregamento */
+button.carregando { opacity: .7; cursor: progress; }
+button:disabled { opacity: .6; cursor: not-allowed; }
+
 .hidden { display: none !important; }

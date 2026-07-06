@@ -62,6 +62,21 @@ function toast(msg) {
   t._t = setTimeout(() => t.classList.add("hidden"), 2200);
 }
 
+// desabilita o botão e mostra "carregando" durante uma ação assíncrona
+function setLoading(btn, on, txt) {
+  if (!btn) return;
+  if (on) {
+    if (btn.dataset.orig === undefined) btn.dataset.orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.classList.add("carregando");
+    btn.innerHTML = txt || "Aguarde...";
+  } else {
+    btn.disabled = false;
+    btn.classList.remove("carregando");
+    if (btn.dataset.orig !== undefined) { btn.innerHTML = btn.dataset.orig; delete btn.dataset.orig; }
+  }
+}
+
 function updateNav() {
   const nav = $("#nav");
   if (state.conta) {
@@ -132,48 +147,62 @@ $("#formConta").addEventListener("submit", async (e) => {
   const body = Object.fromEntries(f.entries());
   if (body.senha !== body.senha2) return toast("As senhas não conferem.");
   delete body.senha2;
-  const conta = await api("/api/contas", { method: "POST", body });
-  if (conta.erro) return toast(conta.erro);
-  state.conta = conta;
-  saveSession();
-  updateNav();
-  toast(`Conta criada! Bem-vindo(a), ${conta.nome}`);
-  irParaPapel(role);
+  const btn = e.submitter;
+  setLoading(btn, true, "Criando...");
+  try {
+    const conta = await api("/api/contas", { method: "POST", body });
+    if (conta.erro) return toast(conta.erro);
+    state.conta = conta;
+    saveSession();
+    updateNav();
+    toast(`Conta criada! Bem-vindo(a), ${conta.nome}`);
+    irParaPapel(role);
+  } finally { setLoading(btn, false); }
 });
 
 $("#formLogin").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const f = new FormData(e.target);
-  const conta = await api("/api/login", { method: "POST", body: Object.fromEntries(f.entries()) });
-  if (conta.erro) return toast(conta.erro);
-  state.conta = conta;
-  saveSession();
-  updateNav();
-  toast(`Olá de novo, ${conta.nome}!`);
-  show("screen-home");
+  const btn = e.target.querySelector("button[type=submit]");
+  setLoading(btn, true, "Entrando...");
+  try {
+    const conta = await api("/api/login", { method: "POST", body: Object.fromEntries(new FormData(e.target).entries()) });
+    if (conta.erro) return toast(conta.erro);
+    state.conta = conta;
+    saveSession();
+    updateNav();
+    toast(`Olá de novo, ${conta.nome}!`);
+    show("screen-home");
+  } finally { setLoading(btn, false); }
 });
 
 $("#formDoador").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const doador = await api("/api/doadores", { method: "POST", body: Object.fromEntries(new FormData(e.target).entries()) });
-  if (doador.erro) return toast(doador.erro);
-  state.doador = doador;
-  saveSession();
-  updateNav();
-  startDoador();
+  const btn = e.target.querySelector("button[type=submit]");
+  setLoading(btn, true);
+  try {
+    const doador = await api("/api/doadores", { method: "POST", body: Object.fromEntries(new FormData(e.target).entries()) });
+    if (doador.erro) return toast(doador.erro);
+    state.doador = doador;
+    saveSession();
+    updateNav();
+    startDoador();
+  } finally { setLoading(btn, false); }
 });
 
 // ===================== ADOTANTE =====================
 $("#formAdotante").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const f = new FormData(e.target);
-  const body = Object.fromEntries(f.entries());
-  const adotante = await api("/api/adotantes", { method: "POST", body });
-  if (adotante.erro) return toast(adotante.erro);
-  state.adotante = adotante;
-  saveSession();
-  updateNav();
-  startAdotante();
+  const body = Object.fromEntries(new FormData(e.target).entries());
+  const btn = e.target.querySelector("button[type=submit]");
+  setLoading(btn, true, "Salvando...");
+  try {
+    const adotante = await api("/api/adotantes", { method: "POST", body });
+    if (adotante.erro) return toast(adotante.erro);
+    state.adotante = adotante;
+    saveSession();
+    updateNav();
+    startAdotante();
+  } finally { setLoading(btn, false); }
 });
 
 async function startAdotante() {
@@ -380,8 +409,8 @@ async function loadMeusMatches() {
   }
   box.innerHTML = matches.map((m) => `
     <div class="match-banner">
-      <div class="mb-titulo">${ic("sparkle")} Você se conectou com ${escapeHtml(m.animal.nome)}!</div>
-      <div>Doado por <strong>${escapeHtml(m.doador ? m.doador.nome : "")}</strong></div>
+      <div class="mb-titulo">${m.adotado ? ic("check") + " Adoção concluída!" : ic("sparkle") + " Você se conectou com " + escapeHtml(m.animal.nome) + "!"}</div>
+      <div>${m.adotado ? escapeHtml(m.animal.nome) + " · doado por " : "Doado por "}<strong>${escapeHtml(m.doador ? m.doador.nome : "")}</strong></div>
       <div class="contato">${ic("phone")} Contato: ${escapeHtml((m.doador && m.doador.contato) || "não informado")}</div>
       <button class="mo-cta" style="margin-top:12px" data-chat="${m.likeId}"
         data-titulo="${escapeHtml((m.doador ? m.doador.nome : "Doador") + " · " + m.animal.nome)}">Abrir conversa</button>
@@ -480,19 +509,22 @@ $("#fotoUpload").addEventListener("change", async (e) => {
 
 $("#formAnimal").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const f = new FormData(e.target);
-  const body = Object.fromEntries(f.entries());
+  const body = Object.fromEntries(new FormData(e.target).entries());
   body.doadorId = state.doador.id;
   // combina fotos enviadas (data URLs) + URLs coladas, enviando como ARRAY
   const urls = (body.fotos || "").split("\n").map((s) => s.trim()).filter(Boolean);
   body.fotos = [...fotosUpload, ...urls];
-  const animal = await api("/api/animais", { method: "POST", body });
-  if (animal.erro) return toast(animal.erro);
-  e.target.reset();
-  fotosUpload = [];
-  renderPreviews();
-  toast(`${animal.nome} publicado!`);
-  loadMeusAnimais();
+  const btn = e.target.querySelector("button[type=submit]");
+  setLoading(btn, true, "Publicando...");
+  try {
+    const animal = await api("/api/animais", { method: "POST", body });
+    if (animal.erro) return toast(animal.erro);
+    e.target.reset();
+    fotosUpload = [];
+    renderPreviews();
+    toast(`${animal.nome} publicado!`);
+    loadMeusAnimais();
+  } finally { setLoading(btn, false); }
 });
 
 async function loadMeusAnimais() {
@@ -765,16 +797,20 @@ async function assinarTermo() {
   if (!$("#termoAceito").checked) return toast("Marque que leu e concorda com o termo.");
   const nome = $("#termoNome").value.trim();
   if (!nome) return toast("Informe seu nome para assinar.");
-  const r = await api("/api/termo/assinar", {
-    method: "POST",
-    body: { likeId: chatState.likeId, parte: chatState.autor, nome },
-  });
-  if (r.erro) return toast(r.erro);
-  $("#termoOverlay").classList.add("hidden");
-  toast(r.finalizado
-    ? "Adoção finalizada! Termo assinado pelas duas partes."
-    : "Termo assinado! Aguardando a outra parte.");
-  await loadTermo();
+  const btn = $("#termoAssinar");
+  setLoading(btn, true, "Assinando...");
+  try {
+    const r = await api("/api/termo/assinar", {
+      method: "POST",
+      body: { likeId: chatState.likeId, parte: chatState.autor, nome },
+    });
+    if (r.erro) { toast(r.erro); return; }
+    $("#termoOverlay").classList.add("hidden");
+    toast(r.finalizado
+      ? "Adoção finalizada! Termo assinado pelas duas partes."
+      : "Termo assinado! Aguardando a outra parte.");
+    await loadTermo();
+  } finally { setLoading(btn, false); }
 }
 
 function closeChat() {
