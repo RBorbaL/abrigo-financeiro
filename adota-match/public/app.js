@@ -508,7 +508,7 @@ async function loadMeusAnimais() {
       <div class="avatar" ${a.foto ? `style="background-image:url('${a.foto}')"` : ""}>
         ${a.foto ? "" : emojiEspecie(a.especie)}</div>
       <div class="body">
-        <strong>${escapeHtml(a.nome)}</strong>
+        <strong>${escapeHtml(a.nome)} ${a.adotado ? `<span class="badge-adotado">${ic("check")} Adotado</span>` : ""}</strong>
         <small>${escapeHtml(a.raca || a.especie)} · ${escapeHtml(a.idade || "")} · ${escapeHtml(a.porte || "")}</small>
         <small>${ic("bolt")} Energia ${escapeHtml(a.energia || "—")} · ${ic("eye")} Atenção ${escapeHtml(a.atencao || "—")}</small>
         <div class="selos">${selosSaude(a)}</div>
@@ -648,9 +648,21 @@ function marcarMatchesVistos(ids) {
   localStorage.setItem("adm_matches_vistos", JSON.stringify(ids));
 }
 
-// ===================== Chat =====================
+// ===================== Chat + Termo de adoção =====================
 let chatState = null;     // { likeId, autor }
 let chatTimer = null;
+
+// Texto do termo (modelo de protótipo — a responsabilidade é dos usuários)
+const TERMO_HTML = `
+  <p>Este termo formaliza o acordo de adoção diretamente entre o <strong>adotante</strong> e o <strong>doador</strong>.</p>
+  <ol>
+    <li>A adoção é um acordo <strong>direto entre as partes</strong>. A plataforma <strong>Focinhos</strong> apenas facilita o contato e <strong>não se responsabiliza</strong> pela adoção, pela entrega do animal, nem por acordos, custos, danos ou obrigações decorrentes.</li>
+    <li>A <strong>entrega e a retirada do animal são combinadas e realizadas diretamente entre as partes</strong>, por conta e risco delas.</li>
+    <li>O <strong>adotante</strong> declara adotar de forma voluntária e se compromete a cuidar do animal com responsabilidade — alimentação, abrigo, saúde, bem-estar e afeto — por toda a vida do animal.</li>
+    <li>O <strong>doador</strong> declara que as informações fornecidas sobre o animal são verdadeiras.</li>
+    <li>Ao assinar, ambas as partes declaram ter lido e concordado com estes termos.</li>
+  </ol>
+  <p class="termo-nota">Modelo para fins de protótipo; não substitui orientação jurídica.</p>`;
 
 async function openChat(likeId, titulo, autor) {
   chatState = { likeId, autor };
@@ -661,6 +673,7 @@ async function openChat(likeId, titulo, autor) {
         <span>${ic("chat")} ${escapeHtml(titulo)}</span>
         <button class="chat-close" title="Fechar">✕</button>
       </div>
+      <div class="termo-bar" id="termoBar"></div>
       <div class="chat-msgs" id="chatMsgs"></div>
       <form class="chat-input" id="chatForm">
         <input id="chatText" placeholder="Escreva uma mensagem..." autocomplete="off" />
@@ -678,9 +691,14 @@ async function openChat(likeId, titulo, autor) {
     await api("/api/mensagens", { method: "POST", body: { likeId, autor, texto } });
     await loadChatMsgs();
   });
-  await loadChatMsgs();
+  await refreshChat();
   $("#chatText").focus();
-  chatTimer = setInterval(loadChatMsgs, 2500); // recebe msgs do outro lado
+  chatTimer = setInterval(refreshChat, 2500); // recebe msgs e status do termo
+}
+
+async function refreshChat() {
+  await loadChatMsgs();
+  await loadTermo();
 }
 
 async function loadChatMsgs() {
@@ -696,6 +714,67 @@ async function loadChatMsgs() {
         </div>`).join("")
     : `<div class="chat-empty">Diga olá!<br>Combinem os detalhes da adoção.</div>`;
   box.scrollTop = box.scrollHeight;
+}
+
+async function loadTermo() {
+  if (!chatState) return;
+  const t = await api("/api/termo?likeId=" + chatState.likeId);
+  const bar = $("#termoBar");
+  if (!bar || t.erro) return;
+  const termo = t.termo || {};
+  const meu = termo[chatState.autor];
+  const outro = termo[chatState.autor === "adotante" ? "doador" : "adotante"];
+  if (t.adotado) {
+    bar.className = "termo-bar finalizado";
+    bar.innerHTML = `${ic("check")} <strong>Adoção finalizada!</strong> As duas partes assinaram o termo. Combinem a entrega do animal.`;
+  } else if (meu) {
+    bar.className = "termo-bar";
+    bar.innerHTML = `${ic("check")} Você assinou o termo. Aguardando a outra parte assinar...`;
+  } else {
+    bar.className = "termo-bar acao";
+    bar.innerHTML = `<span>${ic("alert")} ${outro
+      ? "A outra parte já assinou. Falta você para concluir a adoção."
+      : "Para concluir a adoção, as duas partes assinam o termo."}</span>
+      <button class="btn-termo" id="btnAbrirTermo">Ver e assinar termo</button>`;
+    const b = $("#btnAbrirTermo");
+    if (b) b.addEventListener("click", abrirTermoOverlay);
+  }
+}
+
+function abrirTermoOverlay() {
+  const ov = $("#termoOverlay");
+  const nome = (state.conta && state.conta.nome) ||
+    (chatState.autor === "adotante" ? (state.adotante && state.adotante.nome) : (state.doador && state.doador.nome)) || "";
+  ov.innerHTML = `
+    <div class="termo-card">
+      <h3>Termo de Responsabilidade pela Adoção</h3>
+      <div class="termo-texto">${TERMO_HTML}</div>
+      <label class="check termo-check"><input type="checkbox" id="termoAceito" /> Li e concordo com o termo acima.</label>
+      <label>Assinatura (seu nome completo)<input id="termoNome" value="${escapeHtml(nome)}" /></label>
+      <div class="termo-acoes">
+        <button class="ghost" id="termoCancelar">Cancelar</button>
+        <button class="primary" id="termoAssinar">Assinar termo</button>
+      </div>
+    </div>`;
+  ov.classList.remove("hidden");
+  $("#termoCancelar").addEventListener("click", () => ov.classList.add("hidden"));
+  $("#termoAssinar").addEventListener("click", assinarTermo);
+}
+
+async function assinarTermo() {
+  if (!$("#termoAceito").checked) return toast("Marque que leu e concorda com o termo.");
+  const nome = $("#termoNome").value.trim();
+  if (!nome) return toast("Informe seu nome para assinar.");
+  const r = await api("/api/termo/assinar", {
+    method: "POST",
+    body: { likeId: chatState.likeId, parte: chatState.autor, nome },
+  });
+  if (r.erro) return toast(r.erro);
+  $("#termoOverlay").classList.add("hidden");
+  toast(r.finalizado
+    ? "Adoção finalizada! Termo assinado pelas duas partes."
+    : "Termo assinado! Aguardando a outra parte.");
+  await loadTermo();
 }
 
 function closeChat() {

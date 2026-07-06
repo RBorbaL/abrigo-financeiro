@@ -36,78 +36,42 @@ _lock = threading.Lock()
 # --------------------------------------------------------------------------
 
 def _seed():
-    """Dados iniciais para o app já nascer com animais para dar swipe."""
+    """Estado inicial vazio — apenas animais reais cadastrados pelos usuários."""
     return {
-        "doadores": [
-            {"id": "seed-doador-1", "nome": "Abrigo Patas Felizes",
-             "tipo": "abrigo", "contato": "contato@patasfelizes.org"},
-            {"id": "seed-doador-2", "nome": "Mariana Souza",
-             "tipo": "pessoa", "contato": "mariana@email.com"},
-        ],
-        "animais": [
-            {"id": "seed-an-1", "doadorId": "seed-doador-1",
-             "nome": "Thor", "especie": "Cachorro", "raca": "Vira-lata caramelo",
-             "idade": "2 anos", "porte": "Médio",
-             "energia": "Alta", "atencao": "Média",
-             "castrado": True, "vacinado": True, "vermifugado": True,
-             "saude": "Saudável", "precisaCuidadoEspecial": False, "cuidadosEspeciais": "",
-             "temperamento": "Brincalhão e sociável",
-             "bomComCriancas": True, "bomComAnimais": True,
-             "descricao": "Cheio de energia, adora correr. Ideal para quem tem quintal e tempo para passeios.",
-             "foto": "https://place-puppy.com/300x300",
-             "fotos": ["https://place-puppy.com/300x300", "https://place-puppy.com/305x305", "https://place-puppy.com/310x310"]},
-            {"id": "seed-an-2", "doadorId": "seed-doador-2",
-             "nome": "Mel", "especie": "Gato", "raca": "SRD",
-             "idade": "1 ano", "porte": "Pequeno",
-             "energia": "Baixa", "atencao": "Baixa",
-             "castrado": True, "vacinado": True, "vermifugado": True,
-             "saude": "Saudável", "precisaCuidadoEspecial": False, "cuidadosEspeciais": "",
-             "temperamento": "Carinhosa e tranquila",
-             "bomComCriancas": True, "bomComAnimais": True,
-             "descricao": "Calma e independente. Perfeita para apartamento.",
-             "foto": "https://placekitten.com/300/300",
-             "fotos": ["https://placekitten.com/300/300", "https://placekitten.com/302/302"]},
-            {"id": "seed-an-3", "doadorId": "seed-doador-1",
-             "nome": "Bidu", "especie": "Cachorro", "raca": "Beagle",
-             "idade": "4 meses", "porte": "Pequeno",
-             "energia": "Alta", "atencao": "Alta",
-             "castrado": False, "vacinado": True, "vermifugado": True,
-             "saude": "Saudável", "precisaCuidadoEspecial": False, "cuidadosEspeciais": "",
-             "temperamento": "Filhote agitado, em fase de adestramento",
-             "bomComCriancas": True, "bomComAnimais": True,
-             "descricao": "Filhote que exige atenção, treino e companhia. Não fica bem sozinho o dia todo.",
-             "foto": "https://place-puppy.com/301x301",
-             "fotos": ["https://place-puppy.com/301x301", "https://place-puppy.com/306x306"]},
-            {"id": "seed-an-4", "doadorId": "seed-doador-2",
-             "nome": "Nina", "especie": "Gato", "raca": "Siamês",
-             "idade": "3 anos", "porte": "Pequeno",
-             "energia": "Média", "atencao": "Média",
-             "castrado": True, "vacinado": True, "vermifugado": True,
-             "saude": "Saudável", "precisaCuidadoEspecial": False, "cuidadosEspeciais": "",
-             "temperamento": "Independente, mas afetuosa no fim do dia",
-             "bomComCriancas": False, "bomComAnimais": False,
-             "descricao": "Prefere ser a única pet da casa. Ótima para quem busca companhia discreta.",
-             "foto": "https://placekitten.com/301/301",
-             "fotos": ["https://placekitten.com/301/301", "https://placekitten.com/303/303"]},
-            {"id": "seed-an-5", "doadorId": "seed-doador-1",
-             "nome": "Bono", "especie": "Cachorro", "raca": "Labrador",
-             "idade": "6 anos", "porte": "Grande",
-             "energia": "Média", "atencao": "Alta",
-             "castrado": True, "vacinado": True, "vermifugado": True,
-             "saude": "Cego de um olho; toma medicação contínua para artrose",
-             "precisaCuidadoEspecial": True,
-             "cuidadosEspeciais": "Remédio diário para articulação e visita ao vet a cada 3 meses",
-             "temperamento": "Dócil, calmo e muito apegado",
-             "bomComCriancas": True, "bomComAnimais": True,
-             "descricao": "Pet especial que precisa de um tutor paciente. Retribui com muito amor.",
-             "foto": "https://place-puppy.com/302x302",
-             "fotos": ["https://place-puppy.com/302x302", "https://place-puppy.com/307x307", "https://place-puppy.com/312x312"]},
-        ],
+        "doadores": [],
+        "animais": [],
         "adotantes": [],
         "likes": [],
         "mensagens": [],
         "contas": [],
     }
+
+
+# nomes de animais criados durante testes internos (removidos na limpeza)
+_ANIMAIS_TESTE = {"AnimalComFoto", "TestePix", "FotoTeste", "Rex Upload"}
+
+
+def limpar_amostra(data):
+    """Remove animais/doadores de amostra (ids 'seed-*') e de teste, além de
+    likes/mensagens órfãos. Idempotente — seguro rodar a cada boot."""
+    data.setdefault("animais", [])
+    data.setdefault("doadores", [])
+    data.setdefault("likes", [])
+    data.setdefault("mensagens", [])
+    data["animais"] = [
+        a for a in data["animais"]
+        if not str(a.get("id", "")).startswith("seed-")
+        and a.get("nome") not in _ANIMAIS_TESTE
+    ]
+    ids_animais = {a["id"] for a in data["animais"]}
+    data["doadores"] = [
+        d for d in data["doadores"]
+        if not str(d.get("id", "")).startswith("seed-")
+    ]
+    data["likes"] = [l for l in data["likes"] if l.get("animalId") in ids_animais]
+    ids_likes = {l["id"] for l in data["likes"]}
+    data["mensagens"] = [m for m in data["mensagens"] if m.get("likeId") in ids_likes]
+    return data
 
 
 def _db_connect():
@@ -319,7 +283,9 @@ def api_handle(method, path, query, body):
                 }
                 adotante = next((a for a in data["adotantes"]
                                  if a["id"] == adotante_id), None)
-                animais = [a for a in animais if a["id"] not in avaliados]
+                # exclui já avaliados e animais já adotados
+                animais = [a for a in animais
+                           if a["id"] not in avaliados and not a.get("adotado")]
                 if adotante:
                     animais = [a for a in animais
                                if combina_com_preferencias(a, adotante)]
@@ -470,6 +436,45 @@ def api_handle(method, path, query, body):
                 return 401, {"erro": "E-mail ou senha inválidos"}
             return 200, _conta_publica(conta)
 
+        # ---- TERMO DE RESPONSABILIDADE: status ----
+        if path == "/api/termo" and method == "GET":
+            like_id = query.get("likeId", [None])[0]
+            like = next((l for l in data["likes"] if l["id"] == like_id), None)
+            if not like:
+                return 404, {"erro": "conversa não encontrada"}
+            animal = next((a for a in data["animais"]
+                           if a["id"] == like["animalId"]), None)
+            return 200, {
+                "termo": like.get("termo") or {"adotante": None, "doador": None},
+                "status": like.get("status"),
+                "adotado": like.get("status") == "adotado",
+                "animalNome": animal["nome"] if animal else "",
+            }
+
+        # ---- TERMO: assinar (uma das partes) ----
+        if path == "/api/termo/assinar" and method == "POST":
+            like_id = body.get("likeId", "")
+            parte = body.get("parte", "")            # 'adotante' ou 'doador'
+            nome = body.get("nome", "").strip()
+            if parte not in ("adotante", "doador") or not nome:
+                return 400, {"erro": "parte e nome são obrigatórios"}
+            like = next((l for l in data["likes"] if l["id"] == like_id), None)
+            if not like or like.get("status") not in ("aceito", "adotado"):
+                return 400, {"erro": "conversa não disponível para assinatura"}
+            termo = like.setdefault("termo", {"adotante": None, "doador": None})
+            termo[parte] = {"nome": nome,
+                            "data": datetime.now().strftime("%d/%m/%Y %H:%M")}
+            finalizado = bool(termo.get("adotante") and termo.get("doador"))
+            if finalizado:
+                like["status"] = "adotado"
+                animal = next((a for a in data["animais"]
+                               if a["id"] == like["animalId"]), None)
+                if animal:
+                    animal["adotado"] = True
+            save_data(data)
+            return 200, {"termo": termo, "status": like["status"],
+                         "finalizado": finalizado}
+
         return 404, {"erro": "Rota não encontrada"}
 
 
@@ -564,11 +569,20 @@ def main():
     # IMPORTANTE: sobe o servidor primeiro (não bloqueia o boot no banco).
     # O schema/seed é preparado sob demanda em load_data/save_data, e falhas
     # de conexão não derrubam o processo — apenas as requisições afetadas.
+    def _boot_dados():
+        # garante schema/seed e remove animais de amostra/teste (idempotente)
+        d = load_data()
+        antes = len(d.get("animais", []))
+        limpar_amostra(d)
+        if len(d.get("animais", [])) != antes:
+            save_data(d)
+            print("Limpeza: %d animal(is) de amostra/teste removido(s)." %
+                  (antes - len(d["animais"])))
     if not DATABASE_URL:
-        load_data()                  # modo arquivo: garante data.json + seed
+        _boot_dados()                # modo arquivo
     else:
         try:
-            load_data()              # prepara schema + seed no banco (best-effort)
+            _boot_dados()            # banco (best-effort)
         except Exception as e:
             print("Aviso: banco indisponível no boot (%s). Tentarei sob demanda." % e)
     server = ThreadingHTTPServer((host, port), Handler)
