@@ -255,72 +255,70 @@
       </form>
     </section>
 
-    <!-- PAINEL DOADOR -->
+    <!-- PAINEL DOADOR: menu de animais -->
     <section id="screen-doador" class="screen hidden">
-      <div class="tabs">
-        <button class="tab active" data-tab="cadastrar">Cadastrar animal</button>
-        <button class="tab" data-tab="recebidas">Curtidas recebidas <span id="badgeRecebidas" class="badge hidden">0</span></button>
-        <button class="tab" data-tab="conversas">Conversas</button>
+      <div class="painel-head">
+        <h2>Meus animais</h2>
+        <button class="primary" id="btnNovoAnimal">+ Cadastrar animal</button>
       </div>
+      <div id="doadorAnimais" class="list"></div>
+    </section>
 
-      <div id="tab-cadastrar" class="tabpane">
-        <form id="formAnimal" class="card form">
-          <h3 class="form-section">Dados básicos</h3>
-          <label>Nome do animal<input name="nome" required /></label>
-          <label>Espécie
-            <select name="especie">
-              <option>Cachorro</option><option>Gato</option><option>Outro</option>
-            </select>
-          </label>
-          <label>Raça<input name="raca" placeholder="SRD, Vira-lata..." /></label>
-          <label>Idade<input name="idade" placeholder="Ex: 2 anos" /></label>
-          <label>Porte
-            <select name="porte"><option>Pequeno</option><option>Médio</option><option>Grande</option></select>
-          </label>
-          <label>Fotos do dispositivo
-            <input type="file" id="fotoUpload" accept="image/*" multiple />
-          </label>
-          <div id="fotoPreviews" class="foto-previews"></div>
-          <label>Ou cole URLs de fotos (uma por linha)<textarea name="fotos" rows="2" placeholder="https://exemplo.com/foto1.jpg&#10;https://exemplo.com/foto2.jpg"></textarea></label>
+    <!-- CADASTRO DE ANIMAL -->
+    <section id="screen-animal-cadastro" class="screen hidden">
+      <button class="voltar" data-goto="screen-doador">← Meus animais</button>
+      <h2>Cadastrar animal</h2>
+      <form id="formAnimal" class="card form">
+        <h3 class="form-section">Dados básicos</h3>
+        <label>Nome do animal<input name="nome" required /></label>
+        <label>Espécie
+          <select name="especie">
+            <option>Cachorro</option><option>Gato</option><option>Outro</option>
+          </select>
+        </label>
+        <label>Raça<input name="raca" placeholder="SRD, Vira-lata..." /></label>
+        <label>Idade<input name="idade" placeholder="Ex: 2 anos" /></label>
+        <label>Porte
+          <select name="porte"><option>Pequeno</option><option>Médio</option><option>Grande</option></select>
+        </label>
+        <label>Fotos do dispositivo
+          <input type="file" id="fotoUpload" accept="image/*" multiple />
+        </label>
+        <div id="fotoPreviews" class="foto-previews"></div>
+        <label>Ou cole URLs de fotos (uma por linha)<textarea name="fotos" rows="2" placeholder="https://exemplo.com/foto1.jpg&#10;https://exemplo.com/foto2.jpg"></textarea></label>
 
-          <h3 class="form-section">Temperamento e necessidades</h3>
-          <label>Nível de energia
-            <select name="energia"><option>Baixa</option><option selected>Média</option><option>Alta</option></select>
-          </label>
-          <label>Nível de atenção que exige
-            <select name="atencao"><option>Baixa</option><option selected>Média</option><option>Alta</option></select>
-          </label>
-          <label>Temperamento<input name="temperamento" placeholder="Dócil, brincalhão, tímido..." /></label>
-          <div class="checks">
-            <label class="check"><input type="checkbox" name="bomComCriancas" /> Bom com crianças</label>
-            <label class="check"><input type="checkbox" name="bomComAnimais" /> Bom com outros animais</label>
-          </div>
+        <h3 class="form-section">Temperamento e necessidades</h3>
+        <label>Nível de energia
+          <select name="energia"><option>Baixa</option><option selected>Média</option><option>Alta</option></select>
+        </label>
+        <label>Nível de atenção que exige
+          <select name="atencao"><option>Baixa</option><option selected>Média</option><option>Alta</option></select>
+        </label>
+        <label>Temperamento<input name="temperamento" placeholder="Dócil, brincalhão, tímido..." /></label>
+        <div class="checks">
+          <label class="check"><input type="checkbox" name="bomComCriancas" /> Bom com crianças</label>
+          <label class="check"><input type="checkbox" name="bomComAnimais" /> Bom com outros animais</label>
+        </div>
 
-          <h3 class="form-section">Saúde</h3>
-          <div class="checks">
-            <label class="check"><input type="checkbox" name="castrado" /> Castrado</label>
-            <label class="check"><input type="checkbox" name="vacinado" /> Vacinado</label>
-            <label class="check"><input type="checkbox" name="vermifugado" /> Vermifugado</label>
-          </div>
-          <label>Estado de saúde<input name="saude" placeholder="Saudável, ou descreva condições..." /></label>
-          <label class="check check-destaque"><input type="checkbox" name="precisaCuidadoEspecial" id="chkCuidado" /> Precisa de cuidados especiais</label>
-          <label id="lblCuidados" class="hidden">Quais cuidados especiais?<textarea name="cuidadosEspeciais" rows="2" placeholder="Medicação contínua, dieta, mobilidade reduzida..."></textarea></label>
+        <h3 class="form-section">Saúde</h3>
+        <div class="checks">
+          <label class="check"><input type="checkbox" name="castrado" /> Castrado</label>
+          <label class="check"><input type="checkbox" name="vacinado" /> Vacinado</label>
+          <label class="check"><input type="checkbox" name="vermifugado" /> Vermifugado</label>
+        </div>
+        <label>Estado de saúde<input name="saude" placeholder="Saudável, ou descreva condições..." /></label>
+        <label class="check check-destaque"><input type="checkbox" name="precisaCuidadoEspecial" id="chkCuidado" /> Precisa de cuidados especiais</label>
+        <label id="lblCuidados" class="hidden">Quais cuidados especiais?<textarea name="cuidadosEspeciais" rows="2" placeholder="Medicação contínua, dieta, mobilidade reduzida..."></textarea></label>
 
-          <label>Descrição geral<textarea name="descricao" rows="2" placeholder="História, rotina ideal, o que procura num tutor..."></textarea></label>
-          <button type="submit" class="primary">Publicar animal</button>
-        </form>
-        <h3 class="section-title">Meus animais publicados</h3>
-        <div id="meusAnimais" class="list"></div>
-      </div>
+        <label>Descrição geral<textarea name="descricao" rows="2" placeholder="História, rotina ideal, o que procura num tutor..."></textarea></label>
+        <button type="submit" class="primary">Publicar animal</button>
+      </form>
+    </section>
 
-      <div id="tab-recebidas" class="tabpane hidden">
-        <p class="hint">Pessoas que curtiram seus animais. Confirme para iniciar a conversa.</p>
-        <div id="recebidas" class="list"></div>
-      </div>
-
-      <div id="tab-conversas" class="tabpane hidden">
-        <div id="conversasDoador" class="list"></div>
-      </div>
+    <!-- PERFIL DO ANIMAL (gestão) -->
+    <section id="screen-doador-animal" class="screen hidden">
+      <button class="voltar" data-goto="screen-doador">← Meus animais</button>
+      <div id="animalPerfil"></div>
     </section>
 
   </main>

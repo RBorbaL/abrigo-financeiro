@@ -374,6 +374,46 @@ def api_handle(method, path, query, body):
                 })
             return 200, {"matches": matches}
 
+        # ---- PAINEL DO DOADOR: seus animais com contadores ----
+        if path == "/api/doador/animais" and method == "GET":
+            doador_id = query.get("doadorId", [None])[0]
+            if not doador_id:
+                return 400, {"erro": "doadorId obrigatório"}
+            resultado = []
+            for a in data["animais"]:
+                if a["doadorId"] != doador_id:
+                    continue
+                likes = [l for l in data["likes"]
+                         if l["animalId"] == a["id"] and l["decisao"] == "like"]
+                item = dict(a)
+                item["curtidas"] = sum(1 for l in likes if l["status"] == "pendente")
+                item["conversas"] = sum(1 for l in likes
+                                        if l["status"] in ("aceito", "adotado"))
+                resultado.append(item)
+            return 200, {"animais": resultado}
+
+        # ---- PERFIL DE UM ANIMAL: interessados + conversas ----
+        if path == "/api/animal" and method == "GET":
+            animal_id = query.get("animalId", [None])[0]
+            animal = next((a for a in data["animais"]
+                           if a["id"] == animal_id), None)
+            if not animal:
+                return 404, {"erro": "animal não encontrado"}
+            adotantes = {a["id"]: a for a in data["adotantes"]}
+            interessados, conversas = [], []
+            for l in data["likes"]:
+                if l["animalId"] != animal_id or l["decisao"] != "like":
+                    continue
+                entry = {"likeId": l["id"], "status": l["status"],
+                         "adotante": adotantes.get(l["adotanteId"])}
+                if l["status"] == "pendente":
+                    interessados.append(entry)
+                elif l["status"] in ("aceito", "adotado"):
+                    entry["adotado"] = l["status"] == "adotado"
+                    conversas.append(entry)
+            return 200, {"animal": animal, "interessados": interessados,
+                         "conversas": conversas}
+
         # ---- CHAT: enviar mensagem ----
         if path == "/api/mensagens" and method == "POST":
             like_id = body.get("likeId", "")

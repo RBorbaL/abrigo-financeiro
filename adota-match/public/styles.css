@@ -513,6 +513,26 @@ h2 { margin-bottom: 18px; font-weight: 700; }
 .termo-acoes { display: flex; gap: 10px; margin-top: 18px; }
 .termo-acoes button { flex: 1; padding: 13px; }
 
+/* ===================== Painel do doador ===================== */
+.painel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+.painel-head h2 { margin: 0; }
+.painel-head .primary { width: auto; padding: 12px 18px; }
+.voltar { background: none; border: none; color: var(--pink); cursor: pointer; font-family: inherit; font-weight: 600; font-size: .9rem; padding: 0; margin-bottom: 14px; }
+.voltar:hover { text-decoration: underline; }
+
+.animal-item { text-align: left; cursor: pointer; width: 100%; font-family: inherit; transition: .15s; }
+.animal-item:hover { border-color: var(--pink); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.animal-item .chevron { font-size: 1.7rem; color: var(--muted); align-self: center; line-height: 1; }
+.animal-contadores { display: flex; gap: 14px; margin-top: 5px; color: var(--muted); }
+.animal-contadores span { display: inline-flex; align-items: center; gap: 3px; }
+.status-pendente { background: #fff1d9; color: #c47f00; }
+
+.animal-cabecalho { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+.animal-cabecalho h2 { margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 1.4rem; }
+.animal-cabecalho .hint { margin: 2px 0 0; }
+.avatar.grande { width: 80px; height: 80px; border-radius: 16px; font-size: 2rem; }
+.avatar.grande .ic { width: 40px; height: 40px; }
+
 /* botão em carregamento */
 button.carregando { opacity: .7; cursor: progress; }
 button:disabled { opacity: .6; cursor: not-allowed; }

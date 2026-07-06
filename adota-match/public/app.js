@@ -443,14 +443,17 @@ async function loadMeusMatches() {
 // ===================== DOADOR =====================
 async function startDoador() {
   show("screen-doador");
-  setupTabs($("#screen-doador .tabs"), (tab) => {
-    if (tab === "recebidas") loadRecebidas();
-    if (tab === "conversas") loadConversasDoador();
-    if (tab === "cadastrar") loadMeusAnimais();
-  });
-  loadMeusAnimais();
-  loadRecebidas(); // atualiza badge
+  loadDoadorAnimais();
 }
+
+// "+ Cadastrar animal" -> abre o formulário
+$("#btnNovoAnimal").addEventListener("click", () => {
+  $("#formAnimal").reset();
+  fotosUpload = [];
+  renderPreviews();
+  $("#lblCuidados").classList.add("hidden");
+  show("screen-animal-cadastro");
+});
 
 // mostra o campo de detalhes só quando "cuidados especiais" está marcado
 $("#chkCuidado").addEventListener("change", (e) => {
@@ -523,125 +526,131 @@ $("#formAnimal").addEventListener("submit", async (e) => {
     fotosUpload = [];
     renderPreviews();
     toast(`${animal.nome} publicado!`);
-    loadMeusAnimais();
+    show("screen-doador");
+    loadDoadorAnimais();
   } finally { setLoading(btn, false); }
 });
 
-async function loadMeusAnimais() {
-  const data = await api("/api/animais?doadorId=" + state.doador.id);
-  const box = $("#meusAnimais");
+// ---- menu de animais do doador (status, curtidas, conversas) ----
+async function loadDoadorAnimais() {
+  const data = await api("/api/doador/animais?doadorId=" + state.doador.id);
+  const box = $("#doadorAnimais");
   const animais = data.animais || [];
   if (animais.length === 0) {
-    box.innerHTML = `<p class="hint">Nenhum animal publicado ainda.</p>`;
+    box.innerHTML = `<div class="empty"><span class="big">${ic("paw")}</span>
+      Você ainda não cadastrou nenhum animal.<br>Toque em “Cadastrar animal” para começar.</div>`;
     return;
   }
   box.innerHTML = animais.map((a) => `
-    <div class="item">
-      <div class="avatar" ${a.foto ? `style="background-image:url('${a.foto}')"` : ""}>
-        ${a.foto ? "" : emojiEspecie(a.especie)}</div>
+    <button class="item animal-item" data-animal="${a.id}">
+      <div class="avatar" ${a.foto ? `style="background-image:url('${a.foto}')"` : ""}>${a.foto ? "" : ic("paw")}</div>
       <div class="body">
-        <strong>${escapeHtml(a.nome)} ${a.adotado ? `<span class="badge-adotado">${ic("check")} Adotado</span>` : ""}</strong>
+        <strong>${escapeHtml(a.nome)}
+          <span class="status-pill ${a.adotado ? "status-aceito" : "status-pendente"}">${a.adotado ? "Doado" : "Disponível"}</span></strong>
         <small>${escapeHtml(a.raca || a.especie)} · ${escapeHtml(a.idade || "")} · ${escapeHtml(a.porte || "")}</small>
-        <small>${ic("bolt")} Energia ${escapeHtml(a.energia || "—")} · ${ic("eye")} Atenção ${escapeHtml(a.atencao || "—")}</small>
-        <div class="selos">${selosSaude(a)}</div>
-        ${a.precisaCuidadoEspecial ? `<small class="txt-alerta">${ic("alert")} Cuidados especiais: ${escapeHtml(a.cuidadosEspeciais || a.saude || "sim")}</small>` : ""}
+        <small class="animal-contadores">
+          <span>${ic("heart")} ${a.curtidas} curtida${a.curtidas === 1 ? "" : "s"}</span>
+          <span>${ic("chat")} ${a.conversas} conversa${a.conversas === 1 ? "" : "s"}</span>
+        </small>
       </div>
-    </div>`).join("");
+      <span class="chevron">›</span>
+    </button>`).join("");
+  box.querySelectorAll(".animal-item").forEach((b) =>
+    b.addEventListener("click", () => openAnimalPerfil(b.dataset.animal)));
 }
 
-async function loadRecebidas() {
-  const data = await api("/api/recebidas?doadorId=" + state.doador.id);
-  const recebidas = (data.recebidas || []).filter((r) => r.status === "pendente");
-  const box = $("#recebidas");
-  const badge = $("#badgeRecebidas");
-  if (recebidas.length > 0) {
-    badge.textContent = recebidas.length;
-    badge.classList.remove("hidden");
-  } else {
-    badge.classList.add("hidden");
-  }
-  if (recebidas.length === 0) {
-    box.innerHTML = `<div class="empty"><span class="big">${ic("mail")}</span>
-      Nenhuma curtida pendente.</div>`;
-    return;
-  }
-  box.innerHTML = recebidas.map((r) => {
-    const ad = r.adotante || {};
-    return `
+// ---- perfil de gestão de um animal: interessados + conversas ----
+async function openAnimalPerfil(animalId) {
+  show("screen-doador-animal");
+  const box = $("#animalPerfil");
+  box.innerHTML = `<div class="empty"><span class="big">${ic("paw")}</span>Carregando...</div>`;
+  const data = await api("/api/animal?animalId=" + animalId);
+  if (data.erro) { box.innerHTML = `<p class="hint">${escapeHtml(data.erro)}</p>`; return; }
+  const a = data.animal;
+  const interessados = data.interessados || [];
+  const conversas = data.conversas || [];
+  box.innerHTML = `
+    <div class="animal-cabecalho">
+      <div class="avatar grande" ${a.foto ? `style="background-image:url('${a.foto}')"` : ""}>${a.foto ? "" : ic("paw")}</div>
+      <div>
+        <h2>${escapeHtml(a.nome)} <span class="status-pill ${a.adotado ? "status-aceito" : "status-pendente"}">${a.adotado ? "Doado" : "Disponível"}</span></h2>
+        <p class="hint">${escapeHtml(a.raca || a.especie)} · ${escapeHtml(a.idade || "")} · ${escapeHtml(a.porte || "")}</p>
+      </div>
+    </div>
+
+    <h3 class="section-title">${ic("heart")} Interessados (${interessados.length})</h3>
+    <div class="list">${interessados.length
+      ? interessados.map(renderInteressado).join("")
+      : `<p class="hint">Ninguém curtiu este animal ainda.</p>`}</div>
+
+    <h3 class="section-title">${ic("chat")} Conversas (${conversas.length})</h3>
+    <div class="list">${conversas.length
+      ? conversas.map((c) => renderConversaDoador(c, a.nome)).join("")
+      : `<p class="hint">Nenhuma conversa iniciada. Aceite um interessado para começar.</p>`}</div>`;
+
+  box.querySelectorAll("button[data-decidir]").forEach((btn) =>
+    btn.addEventListener("click", () => decidirInteresse(btn, interessados, a)));
+  box.querySelectorAll("button[data-chat]").forEach((btn) =>
+    btn.addEventListener("click", () => openChat(btn.dataset.chat, btn.dataset.titulo, "doador")));
+}
+
+function renderInteressado(r) {
+  const ad = r.adotante || {};
+  return `
     <div class="item">
       <div class="avatar">${ic("person")}</div>
       <div class="body">
         <strong>${escapeHtml(ad.nome || "Adotante")} ${ad.idade ? "· " + ad.idade + " anos" : ""}</strong>
         <small>${ic("briefcase")} ${escapeHtml(ad.profissao || "—")} · ${ic("house")} ${escapeHtml(ad.moradia || "—")}</small>
-        <small>${ic("heart")} Curtiu: <strong>${escapeHtml(r.animal.nome)}</strong></small>
         <small>${ic("health")} Aceita cuidados especiais: <strong>${escapeHtml(ad.aceitaCuidadosEspeciais || "—")}</strong></small>
         ${ad.sobre ? `<small>“${escapeHtml(ad.sobre)}”</small>` : ""}
         ${ad.contato ? `<small>${ic("phone")} ${escapeHtml(ad.contato)}</small>` : ""}
       </div>
       <div class="actions">
-        <button class="btn-aceitar" data-like="${r.likeId}" data-status="aceito">Conversar</button>
-        <button class="btn-recusar" data-like="${r.likeId}" data-status="recusado">Recusar</button>
+        <button class="btn-aceitar" data-decidir data-like="${r.likeId}" data-status="aceito">Conversar</button>
+        <button class="btn-recusar" data-decidir data-like="${r.likeId}" data-status="recusado">Recusar</button>
       </div>
     </div>`;
-  }).join("");
-
-  box.querySelectorAll("button[data-like]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      await api("/api/decidir", {
-        method: "POST",
-        body: { likeId: btn.dataset.like, status: btn.dataset.status },
-      });
-      if (btn.dataset.status === "aceito") {
-        const r = recebidas.find((x) => x.likeId === btn.dataset.like) || {};
-        const ad = r.adotante || {};
-        showMatchOverlay({
-          subtitulo: `${ad.nome || "O adotante"} quer dar um lar pro ${r.animal ? r.animal.nome : "pet"}`,
-          animalFoto: r.animal && r.animal.foto,
-          animalEmoji: r.animal ? emojiEspecie(r.animal.especie) : ic("paw"),
-          parceiroEmoji: ic("person"),
-          contato: ad.contato,
-          ctaLabel: "Abrir conversa",
-          onCta: () => openChat(btn.dataset.like,
-            `${ad.nome || "Adotante"} · ${r.animal ? r.animal.nome : ""}`, "doador"),
-        });
-      } else {
-        toast("Curtida recusada.");
-      }
-      loadRecebidas();
-    });
-  });
 }
 
-async function loadConversasDoador() {
-  const data = await api("/api/matches?doadorId=" + state.doador.id);
-  const box = $("#conversasDoador");
-  const matches = data.matches || [];
-  if (matches.length === 0) {
-    box.innerHTML = `<div class="empty"><span class="big">${ic("chat")}</span>
-      Nenhuma conversa iniciada ainda.</div>`;
-    return;
-  }
-  box.innerHTML = matches.map((m) => {
-    const ad = m.adotante || {};
-    return `
+function renderConversaDoador(c, animalNome) {
+  const ad = c.adotante || {};
+  return `
     <div class="item">
       <div class="avatar">${ic("person")}</div>
       <div class="body">
-        <strong>${escapeHtml(ad.nome || "Adotante")}</strong>
-        <small>Interessado(a) em <strong>${escapeHtml(m.animal.nome)}</strong></small>
+        <strong>${escapeHtml(ad.nome || "Adotante")} ${c.adotado ? `<span class="badge-adotado">${ic("check")} Adotado</span>` : ""}</strong>
         <small>${ic("phone")} ${escapeHtml(ad.contato || "contato não informado")}</small>
       </div>
       <div class="actions">
-        <button class="btn-aceitar" data-chat="${m.likeId}"
-          data-titulo="${escapeHtml((ad.nome || "Adotante") + " · " + m.animal.nome)}">Abrir conversa</button>
+        <button class="btn-aceitar" data-chat="${c.likeId}"
+          data-titulo="${escapeHtml((ad.nome || "Adotante") + " · " + animalNome)}">Abrir conversa</button>
       </div>
     </div>`;
-  }).join("");
+}
 
-  box.querySelectorAll("button[data-chat]").forEach((btn) => {
-    btn.addEventListener("click", () =>
-      openChat(btn.dataset.chat, btn.dataset.titulo, "doador"));
-  });
+async function decidirInteresse(btn, interessados, animal) {
+  const status = btn.dataset.status;
+  setLoading(btn, true, "...");
+  try {
+    await api("/api/decidir", { method: "POST", body: { likeId: btn.dataset.like, status } });
+  } finally { setLoading(btn, false); }
+  if (status === "aceito") {
+    const r = interessados.find((x) => x.likeId === btn.dataset.like) || {};
+    const ad = r.adotante || {};
+    showMatchOverlay({
+      subtitulo: `${ad.nome || "O adotante"} quer dar um lar pro ${animal.nome}`,
+      animalFoto: animal.foto,
+      animalEmoji: emojiEspecie(animal.especie),
+      parceiroEmoji: ic("person"),
+      contato: ad.contato,
+      ctaLabel: "Abrir conversa",
+      onCta: () => openChat(btn.dataset.like, `${ad.nome || "Adotante"} · ${animal.nome}`, "doador"),
+    });
+  } else {
+    toast("Interesse recusado.");
+  }
+  openAnimalPerfil(animal.id); // recarrega o perfil
 }
 
 // ===================== Tela "É um Match!" =====================
