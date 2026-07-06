@@ -588,8 +588,18 @@ async function openAnimalPerfil(animalId) {
       ? conversas.map((c) => renderConversaDoador(c, a.nome)).join("")
       : `<p class="hint">Nenhuma conversa iniciada. Aceite um interessado para começar.</p>`}</div>`;
 
+  // clicar no card do interessado abre o perfil completo do adotante
+  box.querySelectorAll(".interessado-card").forEach((card) =>
+    card.addEventListener("click", (e) => {
+      if (e.target.closest("button")) return; // cliques nos botões não abrem o perfil
+      const r = interessados.find((x) => x.likeId === card.dataset.like);
+      if (r) abrirPerfilAdotante(r, interessados, a);
+    }));
   box.querySelectorAll("button[data-decidir]").forEach((btn) =>
-    btn.addEventListener("click", () => decidirInteresse(btn, interessados, a)));
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      decidirInteresse(btn.dataset.like, btn.dataset.status, interessados, a);
+    }));
   box.querySelectorAll("button[data-chat]").forEach((btn) =>
     btn.addEventListener("click", () => openChat(btn.dataset.chat, btn.dataset.titulo, "doador")));
 }
@@ -597,20 +607,61 @@ async function openAnimalPerfil(animalId) {
 function renderInteressado(r) {
   const ad = r.adotante || {};
   return `
-    <div class="item">
+    <div class="item interessado-card" data-like="${r.likeId}">
       <div class="avatar">${ic("person")}</div>
       <div class="body">
         <strong>${escapeHtml(ad.nome || "Adotante")} ${ad.idade ? "· " + ad.idade + " anos" : ""}</strong>
         <small>${ic("briefcase")} ${escapeHtml(ad.profissao || "—")} · ${ic("house")} ${escapeHtml(ad.moradia || "—")}</small>
         <small>${ic("health")} Aceita cuidados especiais: <strong>${escapeHtml(ad.aceitaCuidadosEspeciais || "—")}</strong></small>
-        ${ad.sobre ? `<small>“${escapeHtml(ad.sobre)}”</small>` : ""}
-        ${ad.contato ? `<small>${ic("phone")} ${escapeHtml(ad.contato)}</small>` : ""}
+        <span class="ver-perfil">Ver perfil completo →</span>
       </div>
       <div class="actions">
         <button class="btn-aceitar" data-decidir data-like="${r.likeId}" data-status="aceito">Conversar</button>
         <button class="btn-recusar" data-decidir data-like="${r.likeId}" data-status="recusado">Recusar</button>
       </div>
     </div>`;
+}
+
+// perfil completo do adotante (para o doador avaliar o lar)
+function abrirPerfilAdotante(r, interessados, animal) {
+  const ad = r.adotante || {};
+  const ov = $("#adotanteOverlay");
+  const linha = (icone, rotulo, valor) =>
+    `<div class="pa-linha">${ic(icone)}<span>${rotulo}</span><strong>${escapeHtml(valor || "—")}</strong></div>`;
+  ov.innerHTML = `
+    <div class="perfil-card">
+      <div class="perfil-head">
+        <div class="avatar">${ic("person")}</div>
+        <div class="perfil-nome">
+          <h3>${escapeHtml(ad.nome || "Adotante")}</h3>
+          <p class="hint">${ad.idade ? escapeHtml(ad.idade) + " anos" : "Idade não informada"}</p>
+        </div>
+        <button class="chat-close" id="paFechar" title="Fechar">✕</button>
+      </div>
+      <div class="pa-linhas">
+        ${linha("briefcase", "Profissão", ad.profissao)}
+        ${linha("house", "Tipo de moradia", ad.moradia)}
+        ${linha("phone", "Contato", ad.contato)}
+        ${linha("health", "Aceita cuidados especiais", ad.aceitaCuidadosEspeciais)}
+      </div>
+      <h4 class="pa-sub">O que procura</h4>
+      <div class="tags">
+        <span class="tag">Espécie: ${escapeHtml(ad.especiePref || "Tanto faz")}</span>
+        <span class="tag">Porte: ${escapeHtml(ad.portePref || "Tanto faz")}</span>
+        <span class="tag tag-energia">Energia: ${escapeHtml(ad.energiaPref || "Tanto faz")}</span>
+        ${ad.racaPref ? `<span class="tag">Raça: ${escapeHtml(ad.racaPref)}</span>` : ""}
+      </div>
+      ${ad.sobre ? `<h4 class="pa-sub">Sobre</h4><p class="pa-sobre">“${escapeHtml(ad.sobre)}”</p>` : ""}
+      <div class="pa-acoes">
+        <button class="btn-recusar" id="paRecusar">Recusar</button>
+        <button class="btn-aceitar" id="paConversar">Conversar</button>
+      </div>
+    </div>`;
+  ov.classList.remove("hidden");
+  const fechar = () => ov.classList.add("hidden");
+  $("#paFechar").addEventListener("click", fechar);
+  $("#paConversar").addEventListener("click", () => { fechar(); decidirInteresse(r.likeId, "aceito", interessados, animal); });
+  $("#paRecusar").addEventListener("click", () => { fechar(); decidirInteresse(r.likeId, "recusado", interessados, animal); });
 }
 
 function renderConversaDoador(c, animalNome) {
@@ -629,14 +680,11 @@ function renderConversaDoador(c, animalNome) {
     </div>`;
 }
 
-async function decidirInteresse(btn, interessados, animal) {
-  const status = btn.dataset.status;
-  setLoading(btn, true, "...");
-  try {
-    await api("/api/decidir", { method: "POST", body: { likeId: btn.dataset.like, status } });
-  } finally { setLoading(btn, false); }
+async function decidirInteresse(likeId, status, interessados, animal) {
+  toast(status === "aceito" ? "Aceitando..." : "Recusando...");
+  await api("/api/decidir", { method: "POST", body: { likeId, status } });
   if (status === "aceito") {
-    const r = interessados.find((x) => x.likeId === btn.dataset.like) || {};
+    const r = (interessados || []).find((x) => x.likeId === likeId) || {};
     const ad = r.adotante || {};
     showMatchOverlay({
       subtitulo: `${ad.nome || "O adotante"} quer dar um lar pro ${animal.nome}`,
@@ -645,7 +693,7 @@ async function decidirInteresse(btn, interessados, animal) {
       parceiroEmoji: ic("person"),
       contato: ad.contato,
       ctaLabel: "Abrir conversa",
-      onCta: () => openChat(btn.dataset.like, `${ad.nome || "Adotante"} · ${animal.nome}`, "doador"),
+      onCta: () => openChat(likeId, `${ad.nome || "Adotante"} · ${animal.nome}`, "doador"),
     });
   } else {
     toast("Interesse recusado.");

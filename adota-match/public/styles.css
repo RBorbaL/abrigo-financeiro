@@ -533,6 +533,32 @@ h2 { margin-bottom: 18px; font-weight: 700; }
 .avatar.grande { width: 80px; height: 80px; border-radius: 16px; font-size: 2rem; }
 .avatar.grande .ic { width: 40px; height: 40px; }
 
+/* perfil completo do adotante (visão do doador) */
+.interessado-card { cursor: pointer; }
+.interessado-card:hover { border-color: var(--pink); }
+.ver-perfil { color: var(--pink); font-size: .78rem; font-weight: 700; margin-top: 4px; display: inline-block; }
+.perfil-overlay {
+  position: fixed; inset: 0; z-index: 110; background: rgba(0,0,0,.5);
+  display: flex; align-items: center; justify-content: center; padding: 18px; animation: moFade .2s ease;
+}
+.perfil-card {
+  background: #fff; border-radius: 18px; padding: 22px; width: 100%;
+  max-width: 460px; max-height: 88vh; overflow-y: auto; box-shadow: var(--shadow-card);
+}
+.perfil-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.perfil-head .avatar { width: 54px; height: 54px; }
+.perfil-nome { flex: 1; }
+.perfil-nome h3 { font-size: 1.2rem; }
+.pa-linhas { display: grid; gap: 11px; }
+.pa-linha { display: flex; align-items: center; gap: 8px; font-size: .9rem; color: var(--muted); }
+.pa-linha .ic { color: var(--pink); flex-shrink: 0; }
+.pa-linha span { min-width: 96px; }
+.pa-linha strong { color: var(--text); font-weight: 600; }
+.pa-sub { margin: 18px 0 8px; font-size: .95rem; }
+.pa-sobre { font-size: .9rem; color: #444; line-height: 1.5; font-style: italic; }
+.pa-acoes { display: flex; gap: 10px; margin-top: 20px; }
+.pa-acoes button { flex: 1; padding: 13px; border-radius: 999px; }
+
 /* botão em carregamento */
 button.carregando { opacity: .7; cursor: progress; }
 button:disabled { opacity: .6; cursor: not-allowed; }
