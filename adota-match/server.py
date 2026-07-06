@@ -49,7 +49,7 @@ def _seed():
 
 # nomes de animais criados durante testes internos (removidos na limpeza)
 _ANIMAIS_TESTE = {"AnimalComFoto", "TestePix", "FotoTeste", "Rex Upload",
-                  "Rex Real", "Luna Auditoria"}
+                  "Rex Real", "Luna Auditoria", "Thor Painel", "Rex", "Mia"}
 
 
 def limpar_amostra(data):
