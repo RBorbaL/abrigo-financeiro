@@ -559,6 +559,12 @@ h2 { margin-bottom: 18px; font-weight: 700; }
 .pa-acoes { display: flex; gap: 10px; margin-top: 20px; }
 .pa-acoes button { flex: 1; padding: 13px; border-radius: 999px; }
 
+/* aviso (campos opcionais que ajudam) */
+.aviso-perfil {
+  background: var(--grad-soft); border: 1px solid #ffe0c2; border-radius: 12px;
+  padding: 12px 14px; color: #8a5300; font-size: .85rem; line-height: 1.5;
+}
+
 /* botão em carregamento */
 button.carregando { opacity: .7; cursor: progress; }
 button:disabled { opacity: .6; cursor: not-allowed; }

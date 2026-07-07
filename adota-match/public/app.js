@@ -124,13 +124,11 @@ function irParaPapel(role) {
   saveSession();
 }
 
-// prefill de nome/contato a partir da conta logada
+// prefill do nome a partir da conta logada (contato fica só na conta)
 function prefillDe(formId) {
   const form = document.getElementById(formId);
   if (!form || !state.conta) return;
   if (form.nome && !form.nome.value) form.nome.value = state.conta.nome || "";
-  if (form.contato && !form.contato.value)
-    form.contato.value = state.conta.email || state.conta.telefone || "";
 }
 
 $("#btnTrocar").addEventListener("click", () => {
@@ -411,7 +409,7 @@ async function loadMeusMatches() {
     <div class="match-banner">
       <div class="mb-titulo">${m.adotado ? ic("check") + " Adoção concluída!" : ic("sparkle") + " Você se conectou com " + escapeHtml(m.animal.nome) + "!"}</div>
       <div>${m.adotado ? escapeHtml(m.animal.nome) + " · doado por " : "Doado por "}<strong>${escapeHtml(m.doador ? m.doador.nome : "")}</strong></div>
-      <div class="contato">${ic("phone")} Contato: ${escapeHtml((m.doador && m.doador.contato) || "não informado")}</div>
+      <div class="contato">${ic("chat")} Converse pela plataforma para combinar tudo</div>
       <button class="mo-cta" style="margin-top:12px" data-chat="${m.likeId}"
         data-titulo="${escapeHtml((m.doador ? m.doador.nome : "Doador") + " · " + m.animal.nome)}">Abrir conversa</button>
     </div>`).join("");
@@ -431,7 +429,6 @@ async function loadMeusMatches() {
       animalFoto: m.animal.foto,
       animalEmoji: emojiEspecie(m.animal.especie),
       parceiroEmoji: ic("house"),
-      contato: m.doador && m.doador.contato,
       ctaLabel: "Abrir conversa",
       onCta: () => openChat(m.likeId,
         `${(m.doador && m.doador.nome) || "Doador"} · ${m.animal.nome}`, "adotante"),
@@ -641,9 +638,17 @@ function abrirPerfilAdotante(r, interessados, animal) {
       <div class="pa-linhas">
         ${linha("briefcase", "Profissão", ad.profissao)}
         ${linha("house", "Tipo de moradia", ad.moradia)}
-        ${linha("phone", "Contato", ad.contato)}
         ${linha("health", "Aceita cuidados especiais", ad.aceitaCuidadosEspeciais)}
       </div>
+      <h4 class="pa-sub">Casa e experiência</h4>
+      <div class="pa-linhas">
+        ${linha("paw", "Experiência com pets", ad.experienciaPets)}
+        ${linha("paw", "Outros animais em casa", ad.outrosAnimais)}
+        ${linha("person", "Pessoas na casa", ad.pessoasCasa)}
+        ${linha("smile", "Crianças em casa", ad.criancasCasa)}
+        ${linha("bolt", "Tempo para o pet", ad.tempoDisponivel)}
+      </div>
+      ${ad.motivacao ? `<h4 class="pa-sub">Por que quer adotar</h4><p class="pa-sobre">“${escapeHtml(ad.motivacao)}”</p>` : ""}
       <h4 class="pa-sub">O que procura</h4>
       <div class="tags">
         <span class="tag">Espécie: ${escapeHtml(ad.especiePref || "Tanto faz")}</span>
@@ -671,7 +676,7 @@ function renderConversaDoador(c, animalNome) {
       <div class="avatar">${ic("person")}</div>
       <div class="body">
         <strong>${escapeHtml(ad.nome || "Adotante")} ${c.adotado ? `<span class="badge-adotado">${ic("check")} Adotado</span>` : ""}</strong>
-        <small>${ic("phone")} ${escapeHtml(ad.contato || "contato não informado")}</small>
+        <small>${ic("chat")} Conversa ativa na plataforma</small>
       </div>
       <div class="actions">
         <button class="btn-aceitar" data-chat="${c.likeId}"
@@ -691,7 +696,6 @@ async function decidirInteresse(likeId, status, interessados, animal) {
       animalFoto: animal.foto,
       animalEmoji: emojiEspecie(animal.especie),
       parceiroEmoji: ic("person"),
-      contato: ad.contato,
       ctaLabel: "Abrir conversa",
       onCta: () => openChat(likeId, `${ad.nome || "Adotante"} · ${animal.nome}`, "doador"),
     });
@@ -715,7 +719,7 @@ function showMatchOverlay(opts) {
         <div class="mo-heart">${ic("heart")}</div>
         <div class="mo-photo mo-emoji">${opts.parceiroEmoji || ic("person")}</div>
       </div>
-      ${opts.contato ? `<div class="mo-contato">${ic("phone")} ${escapeHtml(opts.contato)}</div>` : ""}
+      <div class="mo-contato">${ic("chat")} Converse com segurança aqui pela plataforma</div>
       <button class="mo-cta">${escapeHtml(opts.ctaLabel || "Enviar mensagem")}</button>
       <button class="mo-close">Continuar vendo</button>
     </div>`;

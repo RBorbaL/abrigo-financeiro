@@ -158,6 +158,14 @@ def _conta_publica(conta):
     return {k: v for k, v in conta.items() if k not in ("senha_hash", "salt")}
 
 
+def _sem_contato(perfil):
+    """Remove o contato direto ao expor um perfil para a OUTRA parte.
+    Comunicação é só pela plataforma; o contato fica para controle interno."""
+    if not perfil:
+        return perfil
+    return {k: v for k, v in perfil.items() if k != "contato"}
+
+
 def combina_com_preferencias(animal, adotante):
     """Filtra a fila de swipe segundo as preferências do adotante.
 
@@ -213,13 +221,20 @@ def api_handle(method, path, query, body):
                 "profissao": body.get("profissao", "").strip(),
                 "moradia": body.get("moradia", ""),  # casa, apartamento...
                 "sobre": body.get("sobre", "").strip(),
-                "contato": body.get("contato", "").strip(),
+                "contato": body.get("contato", "").strip(),  # controle interno; nunca exposto
                 # --- preferências (usadas para filtrar o swipe) ---
                 "especiePref": body.get("especiePref", "Tanto faz"),
                 "portePref": body.get("portePref", "Tanto faz"),
                 "energiaPref": body.get("energiaPref", "Tanto faz"),
                 "racaPref": body.get("racaPref", "").strip(),
                 "aceitaCuidadosEspeciais": body.get("aceitaCuidadosEspeciais", "Sim"),
+                # --- casa e experiência (opcional; ajudam o doador a avaliar) ---
+                "experienciaPets": body.get("experienciaPets", "").strip(),
+                "outrosAnimais": body.get("outrosAnimais", "").strip(),
+                "pessoasCasa": body.get("pessoasCasa", "").strip(),
+                "criancasCasa": body.get("criancasCasa", "").strip(),
+                "tempoDisponivel": body.get("tempoDisponivel", "").strip(),
+                "motivacao": body.get("motivacao", "").strip(),
             }
             if not adotante["nome"]:
                 return 400, {"erro": "Nome é obrigatório"}
@@ -329,7 +344,7 @@ def api_handle(method, path, query, body):
                     "likeId": l["id"],
                     "status": l["status"],
                     "animal": meus_animais[l["animalId"]],
-                    "adotante": adotantes.get(l["adotanteId"]),
+                    "adotante": _sem_contato(adotantes.get(l["adotanteId"])),
                 })
             return 200, {"recebidas": resultado}
 
@@ -368,8 +383,8 @@ def api_handle(method, path, query, body):
                 matches.append({
                     "likeId": l["id"],
                     "animal": animal,
-                    "adotante": adotantes.get(l["adotanteId"]),
-                    "doador": doadores.get(animal["doadorId"]),
+                    "adotante": _sem_contato(adotantes.get(l["adotanteId"])),
+                    "doador": _sem_contato(doadores.get(animal["doadorId"])),
                     "adotado": l["status"] == "adotado",
                 })
             return 200, {"matches": matches}
@@ -405,7 +420,7 @@ def api_handle(method, path, query, body):
                 if l["animalId"] != animal_id or l["decisao"] != "like":
                     continue
                 entry = {"likeId": l["id"], "status": l["status"],
-                         "adotante": adotantes.get(l["adotanteId"])}
+                         "adotante": _sem_contato(adotantes.get(l["adotanteId"]))}
                 if l["status"] == "pendente":
                     interessados.append(entry)
                 elif l["status"] in ("aceito", "adotado"):
@@ -422,7 +437,7 @@ def api_handle(method, path, query, body):
             if not like_id or autor not in ("adotante", "doador") or not texto:
                 return 400, {"erro": "likeId, autor e texto são obrigatórios"}
             like = next((l for l in data["likes"] if l["id"] == like_id), None)
-            if not like or like.get("status") != "aceito":
+            if not like or like.get("status") not in ("aceito", "adotado"):
                 return 400, {"erro": "conversa não disponível para este match"}
             msg = {
                 "id": new_id(),

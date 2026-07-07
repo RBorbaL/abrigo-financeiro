@@ -176,7 +176,6 @@
             <option>Outro</option>
           </select>
         </label>
-        <label>Contato (e-mail/telefone)<input name="contato" /></label>
         <label>Sobre você<textarea name="sobre" rows="2" placeholder="Rotina, tempo disponível, experiência com pets..."></textarea></label>
 
         <h3 class="form-section">O que você procura 🔎</h3>
@@ -211,6 +210,36 @@
             <option>Não</option>
           </select>
         </label>
+
+        <h3 class="form-section">Sua casa e experiência</h3>
+        <p class="hint aviso-perfil">Estes campos são <strong>opcionais</strong>, mas ajudam muito o doador a te conhecer. Um animal é uma vida — quanto mais o doador souber sobre você, mais confiança ele tem para escolher o melhor lar. Vale a pena preencher. 🐾</p>
+        <label>Já teve ou tem experiência com pets?
+          <select name="experienciaPets">
+            <option value="">Prefiro não informar</option>
+            <option>Nunca tive pet</option>
+            <option>Já tive pet</option>
+            <option>Tenho pet(s) atualmente</option>
+          </select>
+        </label>
+        <label>Tem outros animais em casa? Quais?<input name="outrosAnimais" placeholder="Ex: 1 gato e 1 cachorro / Nenhum" /></label>
+        <label>Quantas pessoas moram com você?<input name="pessoasCasa" type="number" min="1" placeholder="Ex: 3" /></label>
+        <label>Tem crianças em casa?
+          <select name="criancasCasa">
+            <option value="">Prefiro não informar</option>
+            <option>Não</option>
+            <option>Sim</option>
+          </select>
+        </label>
+        <label>Quanto tempo por dia você tem para o pet?
+          <select name="tempoDisponivel">
+            <option value="">Prefiro não informar</option>
+            <option>Pouco (fico fora o dia todo)</option>
+            <option>Médio</option>
+            <option>Bastante (passo bastante tempo em casa)</option>
+          </select>
+        </label>
+        <label>Por que você quer adotar?<textarea name="motivacao" rows="2" placeholder="Conte um pouco da sua motivação para adotar..."></textarea></label>
+
         <button type="submit" class="primary">Começar a ver bichinhos →</button>
       </form>
     </section>
@@ -250,7 +279,6 @@
             <option value="abrigo">Abrigo / ONG</option>
           </select>
         </label>
-        <label>Contato (e-mail ou telefone)<input name="contato" /></label>
         <button type="submit" class="primary">Continuar →</button>
       </form>
     </section>
