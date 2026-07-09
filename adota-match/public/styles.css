@@ -559,6 +559,17 @@ h2 { margin-bottom: 18px; font-weight: 700; }
 .pa-acoes { display: flex; gap: 10px; margin-top: 20px; }
 .pa-acoes button { flex: 1; padding: 13px; border-radius: 999px; }
 
+/* status de verificação do abrigo */
+.status-abrigo { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 12px; font-size: .85rem; line-height: 1.4; margin-bottom: 16px; }
+.status-abrigo .ic { flex-shrink: 0; width: 1.3em; height: 1.3em; }
+.status-abrigo.verificado { background: #def5e9; color: #18a565; }
+.status-abrigo.pendente { background: #fff7ea; color: #8a5a00; border: 1px solid #ffe0c2; }
+
+/* endereço e aviso de segurança no banner de match (fundo gradiente) */
+.mb-endereco { font-size: .85rem; margin-top: 6px; opacity: .96; }
+.mb-aviso { font-size: .8rem; margin-top: 8px; background: rgba(255,255,255,.2); border-radius: 10px; padding: 8px 10px; display: flex; align-items: center; gap: 6px; line-height: 1.35; text-align: left; }
+.mb-endereco .ic, .mb-aviso .ic { flex-shrink: 0; }
+
 /* aviso (campos opcionais que ajudam) */
 .aviso-perfil {
   background: var(--grad-soft); border: 1px solid #ffe0c2; border-radius: 12px;

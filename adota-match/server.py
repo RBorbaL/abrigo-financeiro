@@ -72,6 +72,9 @@ def limpar_amostra(data):
     data["likes"] = [l for l in data["likes"] if l.get("animalId") in ids_animais]
     ids_likes = {l["id"] for l in data["likes"]}
     data["mensagens"] = [m for m in data["mensagens"] if m.get("likeId") in ids_likes]
+    # doadores que já existiam (antes da verificação) entram como verificados
+    for d in data["doadores"]:
+        d.setdefault("verificado", True)
     return data
 
 
@@ -159,11 +162,12 @@ def _conta_publica(conta):
 
 
 def _sem_contato(perfil):
-    """Remove o contato direto ao expor um perfil para a OUTRA parte.
-    Comunicação é só pela plataforma; o contato fica para controle interno."""
+    """Remove dados internos (contato direto, CNPJ) ao expor um perfil para a
+    OUTRA parte. Comunicação é só pela plataforma; contato/CNPJ ficam para
+    controle interno. O endereço do abrigo (local de entrega) é mantido."""
     if not perfil:
         return perfil
-    return {k: v for k, v in perfil.items() if k != "contato"}
+    return {k: v for k, v in perfil.items() if k not in ("contato", "cnpj")}
 
 
 def combina_com_preferencias(animal, adotante):
@@ -198,16 +202,19 @@ def api_handle(method, path, query, body):
     with _lock:
         data = load_data()
 
-        # ---- DOADORES ----
+        # ---- DOADORES (apenas abrigos/ONGs, sujeitos a verificação) ----
         if path == "/api/doadores" and method == "POST":
             doador = {
                 "id": new_id(),
-                "nome": body.get("nome", "").strip(),
-                "tipo": body.get("tipo", "pessoa"),  # 'pessoa' ou 'abrigo'
-                "contato": body.get("contato", "").strip(),
+                "nome": body.get("nome", "").strip(),      # nome do abrigo/ONG
+                "tipo": "abrigo",
+                "cnpj": body.get("cnpj", "").strip(),      # controle interno
+                "endereco": body.get("endereco", "").strip(),  # sede: local das adoções
+                "contato": body.get("contato", "").strip(),    # controle interno
+                "verificado": False,                       # entra "em análise"
             }
             if not doador["nome"]:
-                return 400, {"erro": "Nome é obrigatório"}
+                return 400, {"erro": "Nome do abrigo é obrigatório"}
             data["doadores"].append(doador)
             save_data(data)
             return 201, doador
@@ -299,9 +306,13 @@ def api_handle(method, path, query, body):
                 }
                 adotante = next((a for a in data["adotantes"]
                                  if a["id"] == adotante_id), None)
-                # exclui já avaliados e animais já adotados
+                # só abrigos verificados aparecem no swipe (segurança)
+                verificados = {d["id"] for d in data["doadores"]
+                               if d.get("verificado")}
+                # exclui já avaliados, já adotados e de abrigos não verificados
                 animais = [a for a in animais
-                           if a["id"] not in avaliados and not a.get("adotado")]
+                           if a["id"] not in avaliados and not a.get("adotado")
+                           and a["doadorId"] in verificados]
                 if adotante:
                     animais = [a for a in animais
                                if combina_com_preferencias(a, adotante)]
@@ -533,6 +544,31 @@ def api_handle(method, path, query, body):
             return 200, {"termo": termo, "status": like["status"],
                          "finalizado": finalizado}
 
+        # ---- ADMIN: verificação de abrigos (protegido por ADMIN_TOKEN) ----
+        if path == "/api/admin/abrigos" and method == "GET":
+            admin = os.environ.get("ADMIN_TOKEN", "")
+            token = query.get("token", [""])[0]
+            if not admin or not secrets.compare_digest(token, admin):
+                return 403, {"erro": "não autorizado"}
+            return 200, {"abrigos": [
+                {"id": d["id"], "nome": d.get("nome"), "cnpj": d.get("cnpj"),
+                 "endereco": d.get("endereco"), "contato": d.get("contato"),
+                 "verificado": bool(d.get("verificado"))}
+                for d in data["doadores"]
+            ]}
+
+        if path == "/api/admin/verificar" and method == "POST":
+            admin = os.environ.get("ADMIN_TOKEN", "")
+            if not admin or not secrets.compare_digest(body.get("token", ""), admin):
+                return 403, {"erro": "não autorizado"}
+            doador = next((d for d in data["doadores"]
+                           if d["id"] == body.get("doadorId")), None)
+            if not doador:
+                return 404, {"erro": "abrigo não encontrado"}
+            doador["verificado"] = bool(body.get("verificado", True))
+            save_data(data)
+            return 200, {"id": doador["id"], "verificado": doador["verificado"]}
+
         return 404, {"erro": "Rota não encontrada"}
 
 
@@ -628,12 +664,13 @@ def main():
     # O schema/seed é preparado sob demanda em load_data/save_data, e falhas
     # de conexão não derrubam o processo — apenas as requisições afetadas.
     def _boot_dados():
-        # garante schema/seed e remove animais de amostra/teste (idempotente)
+        # garante schema/seed, remove amostra/teste e persiste o grandfather
+        # da verificação de abrigos (idempotente)
         d = load_data()
         antes = len(d.get("animais", []))
         limpar_amostra(d)
+        save_data(d)
         if len(d.get("animais", [])) != antes:
-            save_data(d)
             print("Limpeza: %d animal(is) de amostra/teste removido(s)." %
                   (antes - len(d["animais"])))
     if not DATABASE_URL:

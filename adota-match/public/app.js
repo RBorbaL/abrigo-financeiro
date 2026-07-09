@@ -405,14 +405,19 @@ async function loadMeusMatches() {
       Nenhuma conexão ainda.<br>Quando um doador aceitar seu interesse, aparece aqui.</div>`;
     return;
   }
-  box.innerHTML = matches.map((m) => `
+  box.innerHTML = matches.map((m) => {
+    const d = m.doador || {};
+    const badge = d.verificado ? `<span class="badge-adotado">${ic("check")} Verificado</span>` : "";
+    return `
     <div class="match-banner">
       <div class="mb-titulo">${m.adotado ? ic("check") + " Adoção concluída!" : ic("sparkle") + " Você se conectou com " + escapeHtml(m.animal.nome) + "!"}</div>
-      <div>${m.adotado ? escapeHtml(m.animal.nome) + " · doado por " : "Doado por "}<strong>${escapeHtml(m.doador ? m.doador.nome : "")}</strong></div>
-      <div class="contato">${ic("chat")} Converse pela plataforma para combinar tudo</div>
+      <div>Abrigo: <strong>${escapeHtml(d.nome || "")}</strong> ${badge}</div>
+      ${d.endereco ? `<div class="mb-endereco">${ic("house")} Retirada na sede: ${escapeHtml(d.endereco)}</div>` : ""}
+      <div class="mb-aviso">${ic("alert")} A adoção acontece na sede do abrigo. Combine tudo pelo chat; nunca vá à casa de ninguém.</div>
       <button class="mo-cta" style="margin-top:12px" data-chat="${m.likeId}"
-        data-titulo="${escapeHtml((m.doador ? m.doador.nome : "Doador") + " · " + m.animal.nome)}">Abrir conversa</button>
-    </div>`).join("");
+        data-titulo="${escapeHtml((d.nome || "Abrigo") + " · " + m.animal.nome)}">Abrir conversa</button>
+    </div>`;
+  }).join("");
 
   box.querySelectorAll("button[data-chat]").forEach((btn) => {
     btn.addEventListener("click", () =>
@@ -437,10 +442,21 @@ async function loadMeusMatches() {
   }
 }
 
-// ===================== DOADOR =====================
+// ===================== DOADOR (ABRIGO) =====================
 async function startDoador() {
   show("screen-doador");
+  renderAbrigoStatus();
   loadDoadorAnimais();
+}
+
+function renderAbrigoStatus() {
+  const box = $("#abrigoStatus");
+  if (!box) return;
+  if (state.doador && state.doador.verificado) {
+    box.innerHTML = `<div class="status-abrigo verificado">${ic("check")} <span><strong>Abrigo verificado.</strong> Seus animais aparecem para os adotantes.</span></div>`;
+  } else {
+    box.innerHTML = `<div class="status-abrigo pendente">${ic("alert")} <span><strong>Abrigo em análise.</strong> Você já pode cadastrar animais, mas eles só aparecem para adotantes depois que nossa equipe verificar o abrigo.</span></div>`;
+  }
 }
 
 // "+ Cadastrar animal" -> abre o formulário
@@ -750,7 +766,7 @@ const TERMO_HTML = `
   <p>Este termo formaliza o acordo de adoção diretamente entre o <strong>adotante</strong> e o <strong>doador</strong>.</p>
   <ol>
     <li>A adoção é um acordo <strong>direto entre as partes</strong>. A plataforma <strong>Focinhos</strong> apenas facilita o contato e <strong>não se responsabiliza</strong> pela adoção, pela entrega do animal, nem por acordos, custos, danos ou obrigações decorrentes.</li>
-    <li>A <strong>entrega e a retirada do animal são combinadas e realizadas diretamente entre as partes</strong>, por conta e risco delas.</li>
+    <li>A <strong>entrega e a retirada do animal acontecem sempre na sede do abrigo</strong>, nunca na residência do adotante ou em outro local. A responsabilidade pela entrega é das partes.</li>
     <li>O <strong>adotante</strong> declara adotar de forma voluntária e se compromete a cuidar do animal com responsabilidade — alimentação, abrigo, saúde, bem-estar e afeto — por toda a vida do animal.</li>
     <li>O <strong>doador</strong> declara que as informações fornecidas sobre o animal são verdadeiras.</li>
     <li>Ao assinar, ambas as partes declaram ter lido e concordado com estes termos.</li>

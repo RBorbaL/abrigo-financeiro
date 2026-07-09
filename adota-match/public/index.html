@@ -121,7 +121,7 @@
             <svg class="ic"><use href="#ic-person"/></svg><span>Quero adotar</span>
           </button>
           <button type="submit" class="role-opt" data-role="doador">
-            <svg class="ic"><use href="#ic-house"/></svg><span>Quero doar</span>
+            <svg class="ic"><use href="#ic-house"/></svg><span>Sou um abrigo</span>
           </button>
         </div>
         <p class="hint center">Já tem conta? <button type="button" class="link" data-goto="screen-login">Entrar</button></p>
@@ -153,8 +153,8 @@
         </button>
         <button class="role-card" data-role="doador">
           <span class="emoji"><svg class="ic"><use href="#ic-house"/></svg></span>
-          <strong>Quero doar</strong>
-          <small>Cadastre um animal e receba interessados</small>
+          <strong>Sou um abrigo</strong>
+          <small>Cadastre animais e receba adotantes</small>
         </button>
       </div>
     </section>
@@ -268,18 +268,16 @@
       </div>
     </section>
 
-    <!-- CADASTRO DOADOR -->
+    <!-- CADASTRO DO ABRIGO -->
     <section id="screen-doador-cadastro" class="screen hidden">
-      <h2>Seu perfil de doador</h2>
+      <h2>Cadastro do abrigo</h2>
+      <p class="hint">Para a segurança de todos, apenas <strong>abrigos e ONGs verificados</strong> podem doar. As adoções acontecem sempre na sede do abrigo.</p>
       <form id="formDoador" class="card form">
-        <label>Nome / nome do abrigo<input name="nome" required /></label>
-        <label>Você é
-          <select name="tipo">
-            <option value="pessoa">Pessoa física</option>
-            <option value="abrigo">Abrigo / ONG</option>
-          </select>
-        </label>
-        <button type="submit" class="primary">Continuar →</button>
+        <label>Nome do abrigo / ONG<input name="nome" required /></label>
+        <label>CNPJ<input name="cnpj" placeholder="00.000.000/0000-00" /></label>
+        <label>Endereço da sede (onde as adoções acontecem)<input name="endereco" placeholder="Rua, número, bairro, cidade — UF" /></label>
+        <label>Telefone de contato (uso interno)<input name="contato" placeholder="Para nossa equipe validar o abrigo" /></label>
+        <button type="submit" class="primary">Enviar para verificação →</button>
       </form>
     </section>
 
@@ -289,6 +287,7 @@
         <h2>Meus animais</h2>
         <button class="primary" id="btnNovoAnimal">+ Cadastrar animal</button>
       </div>
+      <div id="abrigoStatus"></div>
       <div id="doadorAnimais" class="list"></div>
     </section>
 
