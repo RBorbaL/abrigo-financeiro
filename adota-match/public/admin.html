@@ -29,6 +29,17 @@
     .msg.err { background:#ffe0e6; color:#c62a4e; }
     .msg.ok { background:#def5e9; color:#18a565; }
     .hint { color:var(--muted); font-size:.82rem; margin-top:16px; line-height:1.5; }
+    .acoes { display:flex; gap:8px; flex-wrap:wrap; }
+    .modal { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; padding:18px; }
+    .modal.hidden { display:none; }
+    .modal-card { background:#fff; border-radius:16px; padding:22px; width:100%; max-width:520px; max-height:88vh; overflow-y:auto; }
+    .modal-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+    .modal-head h2 { font-size:1.2rem; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .modal-head #fechar { background:#f0f0f3; color:var(--text); width:32px; height:32px; border-radius:50%; padding:0; }
+    .modal-card h3 { font-size:.8rem; text-transform:uppercase; letter-spacing:.5px; color:var(--pink); margin:18px 0 8px; }
+    .dl { display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px solid var(--border); font-size:.9rem; }
+    .dl span { color:var(--muted); }
+    .dl strong { text-align:right; }
   </style>
 </head>
 <body>
@@ -43,6 +54,8 @@
     <div id="lista"></div>
     <p class="hint">O token é o valor da variável <code>ADMIN_TOKEN</code> configurada no Render. Ele fica só na memória desta página — não é salvo.</p>
   </div>
+
+  <div id="modal" class="modal hidden"></div>
 
   <script>
     const $ = (s) => document.querySelector(s);
@@ -71,14 +84,55 @@
               <span class="pill ${a.verificado ? "ok" : "pend"}">${a.verificado ? "Verificado" : "Em análise"}</span></strong>
             <small>CNPJ: ${esc(a.cnpj || "—")}</small>
             <small>Endereço: ${esc(a.endereco || "—")}</small>
-            <small>Contato: ${esc(a.contato || "—")}</small>
+            <small>E-mail: ${esc(a.email || "—")} · Tel: ${esc(a.telefone || "—")}</small>
           </div>
-          <button class="${a.verificado ? "sec" : ""}" data-id="${a.id}" data-verif="${a.verificado ? 0 : 1}">
-            ${a.verificado ? "Remover verificação" : "Verificar abrigo"}
-          </button>
+          <div class="acoes">
+            <button class="sec" data-det="${a.id}">Ver detalhes</button>
+            <button class="${a.verificado ? "sec" : ""}" data-id="${a.id}" data-verif="${a.verificado ? 0 : 1}">
+              ${a.verificado ? "Remover verificação" : "Verificar"}
+            </button>
+          </div>
         </div>`).join("");
       box.querySelectorAll("button[data-id]").forEach((b) =>
         b.addEventListener("click", () => verificar(b.dataset.id, b.dataset.verif === "1")));
+      box.querySelectorAll("button[data-det]").forEach((b) =>
+        b.addEventListener("click", () => detalhes(b.dataset.det)));
+    }
+
+    async function detalhes(doadorId) {
+      const token = $("#token").value.trim();
+      const d = await api("/api/admin/abrigo?token=" + encodeURIComponent(token) + "&doadorId=" + doadorId);
+      if (d.erro) return msg(d.erro, "err");
+      const dd = d.doador || {}, c = d.conta || {}, animais = d.animais || [];
+      const linha = (r, v) => `<div class="dl"><span>${r}</span><strong>${esc(v)}</strong></div>`;
+      $("#modal").innerHTML = `
+        <div class="modal-card">
+          <div class="modal-head">
+            <h2>${esc(dd.nome || "Instituição")}
+              <span class="pill ${dd.verificado ? "ok" : "pend"}">${dd.verificado ? "Verificado" : "Em análise"}</span></h2>
+            <button id="fechar">✕</button>
+          </div>
+          <h3>Dados do abrigo</h3>
+          ${linha("CNPJ", dd.cnpj)}
+          ${linha("Endereço da sede", dd.endereco)}
+          ${linha("E-mail", dd.email)}
+          ${linha("Telefone", dd.telefone)}
+          <h3>Conta responsável</h3>
+          ${c.id ? linha("Nome", c.nome) + linha("E-mail", c.email) + linha("Telefone", c.telefone) + linha("Criada em", c.criadoEm) : '<p class="hint">Sem conta vinculada.</p>'}
+          <h3>Animais (${animais.length})</h3>
+          ${animais.length ? animais.map((a) =>
+            `<div class="dl"><span>${esc(a.nome)} ${a.especie ? "(" + esc(a.especie) + ")" : ""}</span><strong>${a.adotado ? "Doado" : "Disponível"} · ${a.curtidas} curtidas · ${a.conversas} conversas</strong></div>`).join("")
+            : '<p class="hint">Nenhum animal cadastrado.</p>'}
+          <div style="margin-top:18px">
+            <button class="${dd.verificado ? "sec" : ""}" id="modalVerif">${dd.verificado ? "Remover verificação" : "Verificar abrigo"}</button>
+          </div>
+        </div>`;
+      $("#modal").classList.remove("hidden");
+      $("#fechar").addEventListener("click", () => $("#modal").classList.add("hidden"));
+      $("#modalVerif").addEventListener("click", async () => {
+        await verificar(doadorId, !dd.verificado);
+        $("#modal").classList.add("hidden");
+      });
     }
 
     async function verificar(doadorId, verificado) {

@@ -167,7 +167,8 @@ def _sem_contato(perfil):
     controle interno. O endereço do abrigo (local de entrega) é mantido."""
     if not perfil:
         return perfil
-    return {k: v for k, v in perfil.items() if k not in ("contato", "cnpj")}
+    internos = ("contato", "cnpj", "email", "telefone", "contaId")
+    return {k: v for k, v in perfil.items() if k not in internos}
 
 
 def combina_com_preferencias(animal, adotante):
@@ -206,15 +207,17 @@ def api_handle(method, path, query, body):
         if path == "/api/doadores" and method == "POST":
             doador = {
                 "id": new_id(),
+                "contaId": body.get("contaId", ""),        # conta que cadastrou
                 "nome": body.get("nome", "").strip(),      # nome do abrigo/ONG
                 "tipo": "abrigo",
                 "cnpj": body.get("cnpj", "").strip(),      # controle interno
                 "endereco": body.get("endereco", "").strip(),  # sede: local das adoções
-                "contato": body.get("contato", "").strip(),    # controle interno
+                "email": body.get("email", "").strip().lower(),      # interno
+                "telefone": body.get("telefone", "").strip(),        # interno
                 "verificado": False,                       # entra "em análise"
             }
-            if not doador["nome"]:
-                return 400, {"erro": "Nome do abrigo é obrigatório"}
+            if not doador["nome"] or not doador["email"] or not doador["telefone"]:
+                return 400, {"erro": "Nome, e-mail e telefone do abrigo são obrigatórios"}
             data["doadores"].append(doador)
             save_data(data)
             return 201, doador
@@ -223,6 +226,7 @@ def api_handle(method, path, query, body):
         if path == "/api/adotantes" and method == "POST":
             adotante = {
                 "id": new_id(),
+                "contaId": body.get("contaId", ""),
                 "nome": body.get("nome", "").strip(),
                 "idade": body.get("idade", ""),
                 "profissao": body.get("profissao", "").strip(),
@@ -473,8 +477,8 @@ def api_handle(method, path, query, body):
             email = body.get("email", "").strip().lower()
             senha = body.get("senha", "")
             telefone = body.get("telefone", "").strip()
-            if not nome or not email or not senha:
-                return 400, {"erro": "Nome, e-mail e senha são obrigatórios"}
+            if not nome or not email or not senha or not telefone:
+                return 400, {"erro": "Nome, e-mail, telefone e senha são obrigatórios"}
             if "@" not in email or "." not in email.split("@")[-1]:
                 return 400, {"erro": "E-mail inválido"}
             if len(senha) < 6:
@@ -552,10 +556,43 @@ def api_handle(method, path, query, body):
                 return 403, {"erro": "não autorizado"}
             return 200, {"abrigos": [
                 {"id": d["id"], "nome": d.get("nome"), "cnpj": d.get("cnpj"),
-                 "endereco": d.get("endereco"), "contato": d.get("contato"),
+                 "endereco": d.get("endereco"), "email": d.get("email"),
+                 "telefone": d.get("telefone"),
                  "verificado": bool(d.get("verificado"))}
                 for d in data["doadores"]
             ]}
+
+        # ---- ADMIN: perfil detalhado de uma instituição ----
+        if path == "/api/admin/abrigo" and method == "GET":
+            admin = os.environ.get("ADMIN_TOKEN", "")
+            token = query.get("token", [""])[0]
+            if not admin or not secrets.compare_digest(token, admin):
+                return 403, {"erro": "não autorizado"}
+            doador_id = query.get("doadorId", [""])[0]
+            doador = next((d for d in data["doadores"]
+                           if d["id"] == doador_id), None)
+            if not doador:
+                return 404, {"erro": "abrigo não encontrado"}
+            conta = next((c for c in data.get("contas", [])
+                          if c["id"] == doador.get("contaId")), None)
+            animais = []
+            for a in data["animais"]:
+                if a["doadorId"] != doador_id:
+                    continue
+                likes = [l for l in data["likes"] if l["animalId"] == a["id"]
+                         and l["decisao"] == "like"]
+                animais.append({
+                    "nome": a["nome"], "especie": a.get("especie"),
+                    "adotado": bool(a.get("adotado")),
+                    "curtidas": sum(1 for l in likes if l["status"] == "pendente"),
+                    "conversas": sum(1 for l in likes
+                                     if l["status"] in ("aceito", "adotado")),
+                })
+            return 200, {
+                "doador": doador,   # inclui campos internos (visão admin)
+                "conta": _conta_publica(conta) if conta else None,
+                "animais": animais,
+            }
 
         if path == "/api/admin/verificar" and method == "POST":
             admin = os.environ.get("ADMIN_TOKEN", "")

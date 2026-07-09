@@ -178,7 +178,9 @@ $("#formDoador").addEventListener("submit", async (e) => {
   const btn = e.target.querySelector("button[type=submit]");
   setLoading(btn, true);
   try {
-    const doador = await api("/api/doadores", { method: "POST", body: Object.fromEntries(new FormData(e.target).entries()) });
+    const body = Object.fromEntries(new FormData(e.target).entries());
+    body.contaId = (state.conta && state.conta.id) || "";
+    const doador = await api("/api/doadores", { method: "POST", body });
     if (doador.erro) return toast(doador.erro);
     state.doador = doador;
     saveSession();
@@ -191,6 +193,7 @@ $("#formDoador").addEventListener("submit", async (e) => {
 $("#formAdotante").addEventListener("submit", async (e) => {
   e.preventDefault();
   const body = Object.fromEntries(new FormData(e.target).entries());
+  body.contaId = (state.conta && state.conta.id) || "";
   const btn = e.target.querySelector("button[type=submit]");
   setLoading(btn, true, "Salvando...");
   try {

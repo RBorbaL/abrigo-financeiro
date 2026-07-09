@@ -112,7 +112,7 @@
       <form id="formConta" class="card form">
         <label>Nome<input name="nome" required autocomplete="name" /></label>
         <label>E-mail<input name="email" type="email" required autocomplete="email" /></label>
-        <label>Telefone (opcional)<input name="telefone" autocomplete="tel" /></label>
+        <label>Telefone<input name="telefone" required autocomplete="tel" placeholder="(00) 00000-0000" /></label>
         <label>Senha<input name="senha" type="password" minlength="6" required autocomplete="new-password" placeholder="mín. 6 caracteres" /></label>
         <label>Confirmar senha<input name="senha2" type="password" required autocomplete="new-password" /></label>
         <p class="hint">Como você quer usar o Focinhos? (dá pra fazer os dois depois)</p>
@@ -276,7 +276,9 @@
         <label>Nome do abrigo / ONG<input name="nome" required /></label>
         <label>CNPJ<input name="cnpj" placeholder="00.000.000/0000-00" /></label>
         <label>Endereço da sede (onde as adoções acontecem)<input name="endereco" placeholder="Rua, número, bairro, cidade — UF" /></label>
-        <label>Telefone de contato (uso interno)<input name="contato" placeholder="Para nossa equipe validar o abrigo" /></label>
+        <label>E-mail da instituição<input name="email" type="email" required placeholder="contato@abrigo.org" /></label>
+        <label>Telefone da instituição<input name="telefone" required placeholder="(00) 00000-0000" /></label>
+        <p class="hint">E-mail e telefone são obrigatórios e usados apenas para verificação e controle interno — nunca são exibidos aos adotantes.</p>
         <button type="submit" class="primary">Enviar para verificação →</button>
       </form>
     </section>
