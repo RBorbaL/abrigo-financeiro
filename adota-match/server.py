@@ -75,6 +75,9 @@ def limpar_amostra(data):
     # doadores que já existiam (antes da verificação) entram como verificados
     for d in data["doadores"]:
         d.setdefault("verificado", True)
+    # contas que já existiam (antes da confirmação) entram como confirmadas
+    for c in data.get("contas", []):
+        c.setdefault("email_confirmado", True)
     return data
 
 
@@ -158,7 +161,8 @@ def _hash_senha(senha, salt=None):
 
 def _conta_publica(conta):
     """Remove campos sensíveis antes de devolver a conta ao cliente."""
-    return {k: v for k, v in conta.items() if k not in ("senha_hash", "salt")}
+    ocultos = ("senha_hash", "salt", "confirm_token")
+    return {k: v for k, v in conta.items() if k not in ocultos}
 
 
 def _sem_contato(perfil):
@@ -169,6 +173,96 @@ def _sem_contato(perfil):
         return perfil
     internos = ("contato", "cnpj", "email", "telefone", "contaId")
     return {k: v for k, v in perfil.items() if k not in internos}
+
+
+# --------------------------------------------------------------------------
+# E-mail (confirmação de conta via Resend)
+# --------------------------------------------------------------------------
+
+def _enviar_email(destinatario, assunto, html):
+    """Envia e-mail pela API do Resend (usa RESEND_API_KEY). Best-effort."""
+    api_key = os.environ.get("RESEND_API_KEY", "").strip()
+    remetente = os.environ.get("EMAIL_FROM", "Focinhos <onboarding@resend.dev>")
+    if not api_key:
+        print("Aviso: RESEND_API_KEY não definida; e-mail não enviado.")
+        return
+    import urllib.request
+    payload = json.dumps({
+        "from": remetente, "to": [destinatario],
+        "subject": assunto, "html": html,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api.resend.com/emails", data=payload, method="POST",
+        headers={"Authorization": "Bearer " + api_key,
+                 "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            resp.read()
+    except Exception as e:
+        print("Falha ao enviar e-mail:", e)
+
+
+def _enviar_confirmacao(email, nome, token):
+    """Dispara o e-mail de confirmação em background (não bloqueia a resposta)."""
+    app_url = os.environ.get("APP_URL", "https://focinhos.onrender.com").rstrip("/")
+    link = app_url + "/confirmar?token=" + token
+    html = (
+        '<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">'
+        '<h2 style="color:#ff5e62">Bem-vindo(a) ao Focinhos \U0001F43E</h2>'
+        '<p>Olá, ' + (nome or "tutor(a)") + '! Confirme seu e-mail para ativar '
+        'sua conta e ajudar a manter a comunidade segura.</p>'
+        '<p style="margin:26px 0"><a href="' + link + '" '
+        'style="background:linear-gradient(45deg,#ff5e62,#ffb347);color:#fff;'
+        'text-decoration:none;padding:14px 26px;border-radius:999px;font-weight:bold">'
+        'Confirmar meu e-mail</a></p>'
+        '<p style="color:#888;font-size:13px">Se o botão não funcionar, cole este '
+        'link no navegador:<br>' + link + '</p>'
+        '<p style="color:#888;font-size:13px">Se você não criou esta conta, ignore.</p>'
+        '</div>'
+    )
+    threading.Thread(target=_enviar_email,
+                     args=(email, "Confirme seu e-mail — Focinhos", html),
+                     daemon=True).start()
+
+
+def _confirmar_email(token):
+    """Marca a conta com esse token como confirmada. Retorna True/False."""
+    if not token:
+        return False
+    with _lock:
+        data = load_data()
+        conta = next((c for c in data.get("contas", [])
+                      if c.get("confirm_token") == token), None)
+        if not conta:
+            return False
+        conta["email_confirmado"] = True
+        conta["confirm_token"] = ""
+        save_data(data)
+        return True
+
+
+def _pagina_confirmacao(ok):
+    msg = ("<h1>E-mail confirmado! \U0001F43E</h1><p>Sua conta está ativa. "
+           "Pode voltar ao app e usar normalmente.</p>") if ok else \
+          ("<h1>Link inválido ou expirado</h1><p>Talvez o e-mail já tenha sido "
+           "confirmado. Tente entrar no app.</p>")
+    return (
+        '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        '<title>Focinhos</title></head>'
+        '<body style="font-family:Arial,sans-serif;background:#f3f4f6;margin:0;'
+        'display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px">'
+        '<div style="background:#fff;border-radius:18px;padding:34px;max-width:460px;'
+        'text-align:center;box-shadow:0 14px 44px rgba(0,0,0,.12)">'
+        '<div style="font-size:2rem;font-weight:800;'
+        'background:linear-gradient(45deg,#ff5e62,#ffb347);-webkit-background-clip:text;'
+        'background-clip:text;color:transparent;margin-bottom:10px">focinhos</div>'
+        + msg +
+        '<p style="margin-top:22px"><a href="/" style="background:'
+        'linear-gradient(45deg,#ff5e62,#ffb347);color:#fff;text-decoration:none;'
+        'padding:13px 26px;border-radius:999px;font-weight:bold">Ir para o app</a></p>'
+        '</div></body></html>'
+    )
 
 
 def combina_com_preferencias(animal, adotante):
@@ -487,13 +581,16 @@ def api_handle(method, path, query, body):
             if any(c["email"] == email for c in contas):
                 return 409, {"erro": "Já existe uma conta com esse e-mail"}
             salt, senha_hash = _hash_senha(senha)
+            token = secrets.token_urlsafe(24)
             conta = {
                 "id": new_id(), "nome": nome, "email": email,
                 "telefone": telefone, "salt": salt, "senha_hash": senha_hash,
+                "email_confirmado": False, "confirm_token": token,
                 "criadoEm": datetime.now().strftime("%Y-%m-%d"),
             }
             contas.append(conta)
             save_data(data)
+            _enviar_confirmacao(email, nome, token)  # dispara em background
             return 201, _conta_publica(conta)
 
         # ---- LOGIN ----
@@ -508,6 +605,30 @@ def api_handle(method, path, query, body):
             if not secrets.compare_digest(tentativa, conta["senha_hash"]):
                 return 401, {"erro": "E-mail ou senha inválidos"}
             return 200, _conta_publica(conta)
+
+        # ---- CONFIRMAÇÃO DE E-MAIL: reenviar ----
+        if path == "/api/reenviar-confirmacao" and method == "POST":
+            email = body.get("email", "").strip().lower()
+            conta = next((c for c in data.get("contas", [])
+                          if c["email"] == email), None)
+            if not conta:
+                return 404, {"erro": "conta não encontrada"}
+            if conta.get("email_confirmado"):
+                return 200, {"ja_confirmado": True}
+            token = secrets.token_urlsafe(24)
+            conta["confirm_token"] = token
+            save_data(data)
+            _enviar_confirmacao(email, conta.get("nome"), token)
+            return 200, {"enviado": True}
+
+        # ---- CONFIRMAÇÃO DE E-MAIL: status (para o app atualizar) ----
+        if path == "/api/conta/status" and method == "GET":
+            conta_id = query.get("contaId", [""])[0]
+            conta = next((c for c in data.get("contas", [])
+                          if c["id"] == conta_id), None)
+            if not conta:
+                return 404, {"erro": "conta não encontrada"}
+            return 200, {"email_confirmado": bool(conta.get("email_confirmado"))}
 
         # ---- TERMO DE RESPONSABILIDADE: status ----
         if path == "/api/termo" and method == "GET":
@@ -652,6 +773,16 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/confirmar":
+            token = parse_qs(parsed.query).get("token", [""])[0]
+            ok = _confirmar_email(token)
+            page = _pagina_confirmacao(ok).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(page)))
+            self.end_headers()
+            self.wfile.write(page)
+            return
         if parsed.path == "/api/health":
             # diagnóstico: informa o modo de persistência e se o banco responde
             mode = "postgres" if DATABASE_URL else "arquivo"

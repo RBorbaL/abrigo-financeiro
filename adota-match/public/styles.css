@@ -576,6 +576,17 @@ h2 { margin-bottom: 18px; font-weight: 700; }
   padding: 12px 14px; color: #8a5300; font-size: .85rem; line-height: 1.5;
 }
 
+/* banner de confirmação de e-mail */
+.email-banner {
+  background: #fff7ea; color: #8a5a00; border-bottom: 1px solid #ffe0c2;
+  padding: 10px 20px; font-size: .85rem; display: flex; align-items: center;
+  justify-content: center; gap: 12px; flex-wrap: wrap; text-align: center;
+}
+.email-banner .ic { flex-shrink: 0; }
+.eb-acoes { display: inline-flex; gap: 12px; }
+.eb-link { background: none; border: none; color: var(--pink); font-weight: 700;
+  cursor: pointer; font-family: inherit; font-size: .85rem; text-decoration: underline; padding: 0; }
+
 /* botão em carregamento */
 button.carregando { opacity: .7; cursor: progress; }
 button:disabled { opacity: .6; cursor: not-allowed; }

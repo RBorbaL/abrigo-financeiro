@@ -86,6 +86,57 @@ function updateNav() {
   } else {
     nav.classList.add("hidden");
   }
+  renderEmailBanner();
+}
+
+// --------- confirmação de e-mail ---------
+function emailConfirmado() {
+  return !state.conta || state.conta.email_confirmado !== false;
+}
+
+function renderEmailBanner() {
+  const bar = $("#emailBanner");
+  if (!bar) return;
+  if (state.conta && state.conta.email_confirmado === false) {
+    bar.classList.remove("hidden");
+    bar.innerHTML = `<span>${ic("mail")} Confirme seu e-mail (${escapeHtml(state.conta.email)}) para liberar todas as funções.</span>
+      <span class="eb-acoes">
+        <button class="eb-link" id="ebReenviar">Reenviar e-mail</button>
+        <button class="eb-link" id="ebConfirmei">Já confirmei</button>
+      </span>`;
+    $("#ebReenviar").addEventListener("click", reenviarConfirmacao);
+    $("#ebConfirmei").addEventListener("click", checarConfirmacao);
+  } else {
+    bar.classList.add("hidden");
+  }
+}
+
+async function reenviarConfirmacao() {
+  if (!state.conta) return;
+  toast("Reenviando...");
+  const r = await api("/api/reenviar-confirmacao", { method: "POST", body: { email: state.conta.email } });
+  if (r.ja_confirmado) { state.conta.email_confirmado = true; saveSession(); updateNav(); return; }
+  toast(r.erro || "E-mail reenviado! Verifique sua caixa de entrada e o spam.");
+}
+
+async function checarConfirmacao() {
+  if (!state.conta) return;
+  const r = await api("/api/conta/status?contaId=" + state.conta.id);
+  if (r.email_confirmado) {
+    state.conta.email_confirmado = true;
+    saveSession();
+    updateNav();
+    toast("E-mail confirmado! Tudo liberado.");
+  } else {
+    toast("Ainda não confirmado. Abra o link do e-mail que enviamos.");
+  }
+}
+
+// bloqueio leve: exige e-mail confirmado para agir
+function exigeEmailConfirmado() {
+  if (emailConfirmado()) return true;
+  toast("Confirme seu e-mail primeiro (veja o aviso no topo).");
+  return false;
 }
 
 // --------- navegação por botões com data-goto ---------
@@ -374,6 +425,10 @@ function enablePhotoNav(card, fotos) {
 }
 
 async function decide(decisao, animal, card, dir) {
+  if (decisao === "like" && !exigeEmailConfirmado()) {
+    if (card) { card.style.transform = ""; }  // devolve o card ao lugar
+    return;
+  }
   if (card) {
     card.style.transform = `translateX(${dir * 600}px) rotate(${dir * 30}deg)`;
     card.style.opacity = 0;
@@ -528,6 +583,7 @@ $("#fotoUpload").addEventListener("change", async (e) => {
 
 $("#formAnimal").addEventListener("submit", async (e) => {
   e.preventDefault();
+  if (!exigeEmailConfirmado()) return;
   const body = Object.fromEntries(new FormData(e.target).entries());
   body.doadorId = state.doador.id;
   // combina fotos enviadas (data URLs) + URLs coladas, enviando como ARRAY
